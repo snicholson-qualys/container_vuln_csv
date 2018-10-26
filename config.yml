@@ -1,0 +1,5 @@
+defaults:
+  username: ""
+  password: "#"
+  vulnerabilities_to_report: 54321
+  apiURL: ""
