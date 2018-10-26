@@ -8,10 +8,10 @@ This script is provided with no warrantee and is provided as an example on how t
 
 CSV File Info
 *Vulnerability Image Report headers*
-> Registry,Repository,ImageID,Tag,Hostname,Vulnerabiltiy ID(CVE Number),Published Date,Description,Severity,Patch Available
+> Registry,Repository,ImageID,Tag,Hostname,Vulnerabiltiy ID,Severity,CVE Number,Published Date,Description,Patch Available
 
 *Vulnerability Container Report headers*
->Registry,Repository,ImageID,Tag,Container,Hostname,Vulnerabiltiy ID(CVE Number),Published Date,Description,Severity,Patch Available
+>Registry,Repository,ImageID,Tag,Container,Hostname,Vulnerabiltiy ID,Severity,CVE Number,Published Date,Description,Patch Available
 
 
 #Script configuration

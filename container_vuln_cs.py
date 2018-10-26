@@ -78,7 +78,7 @@ def image_vuln_csv():
             os.makedirs("reports")
         out_file = "reports/Vulnerability_Image_Report_"+ time.strftime("%Y%m%d-%H%M%S") + ".csv"
         ofile  = open(out_file, "w")
-        ofile.write("Registry,Repository,ImageID,Tag,Hostname,Vulnerabiltiy ID(CVE Number),First Found Date,Description,Severity,Patch Available\n")
+        ofile.write("Registry,Repository,ImageID,Tag,Hostname,Vulnerabiltiy ID,Severity,CVE Number,First Found Date,Description,Patch Available\n")
         for image in image_list['data']:
             image_detail_list = ''
             image_details_url_status = ''
@@ -167,10 +167,10 @@ def image_vuln_csv():
 
                         if vulns['cveids']:
                             for cves in vulns['cveids']:
-                                row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}\n".format(registry,repository,image['imageId'],tags,hostname,str(cves),firstDate,vulns['title'],vulns['severity'],str(patchable))
+                                row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}\n".format(registry,repository,image['imageId'],tags,hostname,vulns['qid'],vulns['severity'],str(cves),firstDate,vulns['title'],str(patchable))
                                 ofile.write(row)
                         else:
-                            row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}\n".format(registry,repository,image['imageId'],tags,hostname,str(cves),firstDate,vulns['title'],vulns['severity'],str(patchable))
+                            row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}\n".format(registry,repository,image['imageId'],tags,hostname,vulns['qid'],vulns['severity'],"",firstDate,vulns['title'],str(patchable))
                             ofile.write(row)
                 else:
                     ebug_file.write('{0} - *** No image vulnerabilities reported \n'.format(datetime.datetime.utcnow()))
@@ -215,7 +215,7 @@ def container_vuln_csv():
             os.makedirs("reports")
         out_file = "reports/Vulnerability_Container_Report_"+ time.strftime("%Y%m%d-%H%M%S") + ".csv"
         ofile  = open(out_file, "w")
-        ofile.write("Registry,Repository,ImageID,Tag,Container,Hostname,Vulnerabiltiy ID(CVE Number),First Found Date,Description,Severity,Patch Available\n")
+        ofile.write("Registry,Repository,ImageID,Tag,Container,Hostname,Vulnerabiltiy ID,Severity,CVE Number,First Found Date,Description,Patch Available\n")
         for container in container_list['data']:
             container_detail_list = ''
             container_details_url_status = ''
@@ -327,10 +327,10 @@ def container_vuln_csv():
 
                                 if vulns['cveids']:
                                     for cves in vulns['cveids']:
-                                        row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}\n".format(registry,repository,container['imageId'],tags,container['containerId'],hostname,str(cves),firstDate,vulns['title'],vulns['severity'],str(patchable))
+                                        row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}\n".format(registry,repository,container['imageId'],tags,container['containerId'],hostname,vulns['qid'],vulns['severity'],str(cves),firstDate,vulns['title'],str(patchable))
                                         ofile.write(row)
                                 else:
-                                    row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}\n".format(registry,repository,container['imageId'],tags,container['containerId'],hostname,str(cves),firstDate,vulns['title'],vulns['severity'],str(patchable))
+                                    row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}\n".format(registry,repository,container['imageId'],tags,container['containerId'],hostname,vulns['qid'],vulns['severity'],"",firstDate,vulns['title'],str(patchable))
                                     ofile.write(row)
 
                 else:
