@@ -25,7 +25,7 @@ Provide script configuration information for API U/P, vulnerability severity rat
 #Script Requirements
 This script is written in Python 2.7.x (X > 10)
 This script requires the following PIP modules to run
-Modules: sys, logging, requests, datetime, os, time, yaml, json, base64
+Modules: sys, requests, datetime, os, time, pyyaml, json, base64
 
 Example Python module install
 MAC/Linux "pip install requests"
