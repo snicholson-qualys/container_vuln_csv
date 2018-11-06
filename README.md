@@ -1,4 +1,4 @@
-#Image and Container Vulnerability CVS creation
+#Image and Container Vulnerability CSV creation
 
 This is an example script on creating two CSV files from the Qualys Container Security API for both images and containers respectively.
 This script is provided with no warrantee and is provided as an example on how to accomplish making these files in Python 2.7.x
