@@ -78,7 +78,7 @@ def image_vuln_csv():
             os.makedirs("reports")
         out_file = "reports/Vulnerability_Image_Report_"+ time.strftime("%Y%m%d-%H%M%S") + ".csv"
         ofile  = open(out_file, "w")
-        ofile.write("Registry,Repository,ImageID,Tag,Hostname,Vulnerabiltiy ID,Severity,CVE Number,First Found Date,Description,Patch Available\n")
+        ofile.write("Registry,Repository,ImageID,Tag,Hostname,Vulnerabiltiy ID,Severity,CVE Number,First Found Date,Description,Type,Patch Available\n")
         for image in image_list['data']:
             image_detail_list = ''
             image_details_url_status = ''
@@ -118,13 +118,18 @@ def image_vuln_csv():
                     if repo['repository'] not in repository:
                         repository += repo['repository'] + ";"
 
-            if image['host']:
-                #print image['host']
-                for host in image['host']:
-                    if host['hostname'] not in hostname:
-                        hostname += (host['hostname'] + ";")
-            else:
+            try:
+                if image['host']:
+                    #print image['host']
+                    hostname = ""
+                    for host in image['host']:
+                        if host['hostname'] not in hostname:
+                            hostname += (host['hostname'] + ";")
+                else:
+                    hostname = ""
+            except KeyError:
                 hostname = ""
+                pass
             if image_details_url:
                 counter = 0
                 while counter < 5:
@@ -146,7 +151,7 @@ def image_vuln_csv():
                             debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),image_details_url))
                             sys.exit(1)
 
-                print str(image['imageId'])
+                #print str(image['imageId'])
                 #print image
                 #print image_detail_list
                 if vuln_counts >= 1:
@@ -167,13 +172,13 @@ def image_vuln_csv():
 
                         if vulns['cveids']:
                             for cves in vulns['cveids']:
-                                row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}\n".format(registry,repository,image['imageId'],tags,hostname,vulns['qid'],vulns['severity'],str(cves),firstDate,vulns['title'],str(patchable))
+                                row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}\n".format(registry,repository,image['imageId'],tags,hostname,vulns['qid'],vulns['severity'],str(cves),firstDate,vulns['title'],vulns['typeDetected'],str(patchable))
                                 ofile.write(row)
                         else:
-                            row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}\n".format(registry,repository,image['imageId'],tags,hostname,vulns['qid'],vulns['severity'],"",firstDate,vulns['title'],str(patchable))
+                            row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}\n".format(registry,repository,image['imageId'],tags,hostname,vulns['qid'],vulns['severity'],"",firstDate,vulns['title'],vulns['typeDetected'],str(patchable))
                             ofile.write(row)
                 else:
-                    ebug_file.write('{0} - *** No image vulnerabilities reported \n'.format(datetime.datetime.utcnow()))
+                    debug_file.write('{0} - *** No image vulnerabilities reported \n'.format(datetime.datetime.utcnow()))
 
     debug_file.write('------------------------------End Image Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
     debug_file.close()
@@ -215,7 +220,7 @@ def container_vuln_csv():
             os.makedirs("reports")
         out_file = "reports/Vulnerability_Container_Report_"+ time.strftime("%Y%m%d-%H%M%S") + ".csv"
         ofile  = open(out_file, "w")
-        ofile.write("Registry,Repository,ImageID,Tag,Container,Hostname,Vulnerabiltiy ID,Severity,CVE Number,First Found Date,Description,Patch Available\n")
+        ofile.write("Registry,Repository,ImageID,Container,Container Name,Hostname,IP,Vulnerabiltiy ID,Severity,CVE Number,First Found Date,Description,Type,Patch Available\n")
         for container in container_list['data']:
             container_detail_list = ''
             container_details_url_status = ''
@@ -225,7 +230,7 @@ def container_vuln_csv():
                     container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
             elif vuln_rating == '5432':
                 if container['vulnerabilities']['severity2Count'] > 0 or container['vulnerabilities']['severity3Count'] > 0 or container['vulnerabilities']['severity4Count'] > 0 or container['vulnerabilities']['severity5Count'] > 0:
-                    v_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                    container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
             elif vuln_rating == '543':
                 if container['vulnerabilities']['severity3Count'] > 0 or container['vulnerabilities']['severity4Count'] > 0 or container['vulnerabilities']['severity5Count'] > 0:
                     container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
@@ -285,54 +290,41 @@ def container_vuln_csv():
                             debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),image_details_url))
                             sys.exit(1)
                 registry = ''
-                tags = ''
+                #tags = ''
                 repository = ''
-                #print image_detail_list
                 repos = image_detail_list['repo']
                 for repo in repos:
                     if repo['registry'] not in registry:
                         registry += repo['registry'] + ";"
-                    if repo['tag'] not in tags:
-                        tags += repo['tag'] + ";"
+                    #print repo['tag']
+                    #if repo['tag'] not in tags:
+                        #tags += repo['tag'] + ";"
                     if repo['repository'] not in repository:
                         repository += repo['repository'] + ";"
-                #print container['host']
                 if container['host']:
                     hostname = container['host']['hostname']
                 else:
                     hostname = ""
 
-
-                #print str(container['imageId'])
-                #print container
-                #print container_detail_list
+                #Iterate through Vulnerabilities
                 if container_vuln_counts >= 1:
-                    for software in container_detail_list['softwares']:
-                        #print software['vulnerabilities']
+                    if container_detail_list['vulnerabilities']:
+                        for vulns in container_detail_list['vulnerabilities']:
+                            if vulns['patchAvailable']:
+                                patchable = vulns['patchAvailable']
+                            else:
+                                patchable = 'False'
 
-                        if software['vulnerabilities']:
-                            for vulns in software['vulnerabilities']:
-                                container_vuln = software['vulnerabilities']
-                                #print type(vulns['patchAvailable'])
-                                if vulns['patchAvailable']:
-                                    patchable = vulns['patchAvailable']
-                                else:
-                                    patchable = 'False'
-                                #print vulns['firstFound']
-                                #print vulns['firstFound'][0:10]
-                                firstFound = vulns['firstFound'][0:10]
-                                #print datetime.datetime.utcfromtimestamp(float(firstFound)).strftime('%Y-%m-%d %H:%M:%S')
-                                firstDate = str(datetime.datetime.utcfromtimestamp(float(firstFound)).strftime('%Y-%m-%d %H:%M:%S'))
-                                #print firstDate
+                            firstFound = vulns['firstFound'][0:10]
+                            firstDate = str(datetime.datetime.utcfromtimestamp(float(firstFound)).strftime('%Y-%m-%d %H:%M:%S'))
 
-                                if vulns['cveids']:
-                                    for cves in vulns['cveids']:
-                                        row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}\n".format(registry,repository,container['imageId'],tags,container['containerId'],hostname,vulns['qid'],vulns['severity'],str(cves),firstDate,vulns['title'],str(patchable))
-                                        ofile.write(row)
-                                else:
-                                    row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}\n".format(registry,repository,container['imageId'],tags,container['containerId'],hostname,vulns['qid'],vulns['severity'],"",firstDate,vulns['title'],str(patchable))
+                            if vulns['cveids']:
+                                for cves in vulns['cveids']:
+                                    row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}\n".format(registry,repository,container['imageId'],container['containerId'],container['name'],hostname,container['host']['ipAddress'],vulns['qid'],vulns['severity'],str(cves),firstDate,vulns['title'],vulns['typeDetected'],str(patchable))
                                     ofile.write(row)
-
+                            else:
+                                row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}\n".format(registry,repository,container['imageId'],container['containerId'],container['name'],hostname,container['host']['ipAddress'],vulns['qid'],vulns['severity'],"",firstDate,vulns['title'],vulns['typeDetected'],str(patchable))
+                                ofile.write(row)
                 else:
                     debug_file.write('{0} - *** No container vulnerabilities reported \n'.format(datetime.datetime.utcnow()))
 
