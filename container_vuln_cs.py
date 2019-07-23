@@ -1,9 +1,9 @@
 #
 # Author: Sean Nicholson
 # Purpose: To iterate the Container Security API and export a CSV of image and container vulns
-# version: 1.0.0
-# date: 10.1.2018
-#
+# version: 1.0.1
+# date: 07.23.2019
+# 07.23.2019 - Added Loader=yaml.SafeLoader to address yaml warning
 #
 #
 
@@ -14,7 +14,7 @@ import base64
 
 def config():
     with open('config.yml', 'r') as config_settings:
-        config_info = yaml.load(config_settings)
+        config_info = yaml.load(config_settings, Loader=yaml.SafeLoader)
         username = str(config_info['defaults']['username']).rstrip()
         password = str(config_info['defaults']['password']).rstrip()
         vuln_severity = str(config_info['defaults']['vulnerabilities_to_report']).rstrip()
