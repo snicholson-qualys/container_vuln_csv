@@ -1,10 +1,10 @@
 #
 # Author: Sean Nicholson
 # Purpose: To iterate the Container Security API and export a CSV of image and container vulns
-# version: 1.0.1
-# date: 07.23.2019
+# version: 1.0.2
+# date: 09.04.2019
 # 07.23.2019 - Added Loader=yaml.SafeLoader to address yaml warning
-#
+# 09.04.2019 - Changed API U/P to read from env variables instead of config file
 #
 
 import sys, requests, datetime, os, time
@@ -15,8 +15,8 @@ import base64
 def config():
     with open('config.yml', 'r') as config_settings:
         config_info = yaml.load(config_settings, Loader=yaml.SafeLoader)
-        username = str(config_info['defaults']['username']).rstrip()
-        password = str(config_info['defaults']['password']).rstrip()
+        username = os.environ["QUALYS_API_USERNAME"]
+        password = base64.b64decode(os.environ["QUALYS_API_PASSWORD"])
         vuln_severity = str(config_info['defaults']['vulnerabilities_to_report']).rstrip()
         URL = str(config_info['defaults']['apiURL']).rstrip()
         if username == '' or password == '' or URL == '':

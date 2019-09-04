@@ -16,12 +16,23 @@ CSV File Info
 *Vulnerability Container Report headers*
 >Registry,Repository,ImageID,Tag,Container,Hostname,Vulnerabiltiy ID,Severity,CVE Number,Published Date,Description,Patch Available
 
+#Qualys API Username and Password
+This script is configured to read the Qualys User name and Password from OS Environment Variables
+QUALYS_API_USERNAME = Qualys API Username
+QUALYS_API_PASSWORD = Base64 encoded Password
+
+> QUALYS_API_USERNAME stores the Qualys API User Name
+
+> QUALYS_API_PASSWORD stores the base64 encoded password for Qualys API
+to encode the password using base64 encoding execute the following command substituting the API Account Password for "APIpassword" - make sure the password is in '' or ""
+
+export $QUALYS_API_PASSWORD = `echo -n "APIpassword" | base64`
+
 
 # Script configuration
 *config.yml*
-Provide script configuration information for API U/P, vulnerability severity ratings, and Qualys API URL
-  username: "QualysUsername"
-  password: "QualysPassword"
+Provide script configuration information for vulnerability severity ratings and Qualys API URL
+
   vulnerabilities_to_report: string value of severity ratings to include (**acceptable entries 54321, 5432, 543, 54, or 5**)
   apiURL: "Qualys API URL base (https:// - > .com, no trailing '/')"
 
