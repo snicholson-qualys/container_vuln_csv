@@ -5,18 +5,36 @@
 # date: 09.04.2019
 # 07.23.2019 - Added Loader=yaml.SafeLoader to address yaml warning
 # 09.04.2019 - Changed API U/P to read from env variables instead of config file
-#
+# 09.12.2010 - v1.1 Added some logging
 
-import sys, requests, datetime, os, time
+import sys, requests, datetime, os, time, logging
 import yaml
 import json
 import base64
+import logging.config
+
+def setup_logging(default_path='./config/logging.yml',default_level=logging.INFO,env_key='LOG_CFG'):
+    """Setup logging configuration"""
+    if not os.path.exists("log"):
+        os.makedirs("log")
+    path = default_path
+    value = os.getenv(env_key, None)
+    if value:
+        path = value
+    if os.path.exists(path):
+        with open(path, 'rt') as f:
+            config = yaml.safe_load(f.read())
+        logging.config.dictConfig(config)
+    else:
+        logging.basicConfig(level=default_level)
+
 
 def config():
     with open('config.yml', 'r') as config_settings:
         config_info = yaml.load(config_settings, Loader=yaml.SafeLoader)
         username = os.environ["QUALYS_API_USERNAME"]
-        password = base64.b64decode(os.environ["QUALYS_API_PASSWORD"])
+        #password = base64.b64decode(os.environ["QUALYS_API_PASSWORD"])
+        password = os.environ["QUALYS_API_PASSWORD"]
         vuln_severity = str(config_info['defaults']['vulnerabilities_to_report']).rstrip()
         URL = str(config_info['defaults']['apiURL']).rstrip()
         if username == '' or password == '' or URL == '':
@@ -26,7 +44,6 @@ def config():
 
 
 def Get_Call(username,password,URL):
-
     usrPass = str(username)+':'+str(password)
     b64Val = base64.b64encode(usrPass)
     headers = {
@@ -37,7 +54,10 @@ def Get_Call(username,password,URL):
 
     r = requests.get(URL, headers=headers, verify=True)
     #print r.text
+    logger.debug("Repsonse code for GET to {0} - Response Code {1}".format(str(URL),str(r.status_code)))
+    logger.debug("API Data for Response \n {}".format(str(r.text)))
     image_list_json = json.loads(r.text)
+
     return image_list_json,r.status_code
 
 def image_vuln_csv():
@@ -45,15 +65,18 @@ def image_vuln_csv():
     username, password, vuln_rating, URL = config()
     if not os.path.exists("debug"):
         os.makedirs("debug")
-
+    logger.debug("Starting image_vuln_csv")
     debug_file = open("./debug/debug_file.txt", "a")
     debug_file.write('------------------------------Begin Image Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
     image_list_pull_URL = URL + "/csapi/v1.1/images"
+    logger.debug("Image Pull URL {}".format(image_list_pull_URL))
     debug_file.write('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), image_list_pull_URL))
     counter = 0
     while counter < 5:
 
         image_list, image_list_status = Get_Call(username,password,image_list_pull_URL)
+        logger.debug("Called {0} and got reponse code {1} with data: \n {2}".format(str(image_list_pull_URL),str(image_list_status),str(image_list)))
+        logger.debug("image list \n {}".format(list(image_list)))
         debug_file.write('{0} - API URL {1} response status: {2} \n'.format(datetime.datetime.utcnow(), image_list_pull_URL, image_list_status))
         if image_list_status != 200:
             debug_file.write('{0} - API URL {1} error details: {2} \n'.format(datetime.datetime.utcnow(),image_list_pull_URL, image_list))
@@ -335,5 +358,7 @@ def container_vuln_csv():
 
 
 if __name__ == '__main__':
+    setup_logging()
+    logger = logging.getLogger(__name__)
     image_vuln_csv()
     container_vuln_csv()
