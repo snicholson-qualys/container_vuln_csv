@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Author: Sean Nicholson
 # Purpose: To iterate the Container Security API and export a CSV of image and container vulns
