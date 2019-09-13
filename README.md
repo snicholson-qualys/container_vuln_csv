@@ -12,25 +12,28 @@ CSV File Info
 *Vulnerability Container Report headers*
 >Registry,Repository,ImageID,Tag,Container,Hostname,Vulnerabiltiy ID,Severity,CVE Number,Published Date,Description,Patch Available
 
-## Qualys API Username and Password
-This script is configured to read the Qualys User name and Password from OS Environment Variables
-QUALYS_API_USERNAME = Qualys API Username
-QUALYS_API_PASSWORD = Base64 encoded Password
+## Configuration
+Two configuration settings will need to be made by the user before using this script: Updating the config.yml with appropriate information, and setting API username and password in environment variables.
 
-> QUALYS_API_USERNAME stores the Qualys API User Name
+*config.yml* provides script configuration information for vulnerability severity ratings and Qualys API URL
 
-> QUALYS_API_PASSWORD stores the base64 encoded password for Qualys API
-to encode the password using base64 encoding execute the following command substituting the API Account Password for "APIpassword" - make sure the password is in '' or ""
+  `vulnerabilities_to_report`: string value of severity ratings to include (**acceptable entries 54321, 5432, 543, 54, or 5**)
 
-export $QUALYS_API_PASSWORD = `echo -n "APIpassword" | base64`
+  `apiURL`: Qualys API URL base (https:// - > .com, without a trailing '/'. e.g. `https://qualysapi.qg2.apps.qualys.com` )
 
+### Qualys API Username and Password
+This script is configured to read the Qualys User name and Password from OS Environment Variables:
+  `QUALYS_API_USERNAME`: Qualys API Username
 
-## Script configuration
-*config.yml*
-Provide script configuration information for vulnerability severity ratings and Qualys API URL
+  `QUALYS_API_PASSWORD`: Qualys API Password
 
-  vulnerabilities_to_report: string value of severity ratings to include (**acceptable entries 54321, 5432, 543, 54, or 5**)
-  apiURL: "Qualys API URL base (https:// - > .com, no trailing '/')"
+These can be set on a mac/linux system with commands such as:
+```
+export QUALYS_API_USERNAME=frank
+export QUALYS_API_USERNAME=frankspassword
+```
+
+*note*: We recommend you consider rammifications of leaving credentials in environment variables or shell history. Potential improvements to this script would include reading these credentials from more secure locations.
 
 ## Script Requirements
 This script is tested on Python 3.
