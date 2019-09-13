@@ -8,6 +8,8 @@
 # 09.04.2019 - Changed API U/P to read from env variables instead of config file
 # 09.12.2010 - v1.1 Added some logging
 
+from __future__ import print_function
+from builtins import str
 import sys, requests, datetime, os, time, logging
 import yaml
 import json
@@ -39,7 +41,7 @@ def config():
         vuln_severity = str(config_info['defaults']['vulnerabilities_to_report']).rstrip()
         URL = str(config_info['defaults']['apiURL']).rstrip()
         if username == '' or password == '' or URL == '':
-            print "Config information in ./config.yml not configured correctly. Exiting..."
+            print("Config information in ./config.yml not configured correctly. Exiting...")
             sys.exit(1)
     return username, password, vuln_severity, URL
 
@@ -87,7 +89,7 @@ def image_vuln_csv():
         else:
             debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),image_list_pull_URL, counter))
             debug_file.write("Not feeling well...sleeping 10 secs\n")
-            print "Not feeling well - sleeping 10 secs"
+            print("Not feeling well - sleeping 10 secs")
             time.sleep(10)
             counter += 1
             if counter == 5:
@@ -168,7 +170,7 @@ def image_vuln_csv():
                     else:
                         debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),image_details_url, counter))
                         debug_file.write("Not feeling well...sleeping 10 secs\n")
-                        print "Not feeling well - sleeping 10 secs"
+                        print("Not feeling well - sleeping 10 secs")
                         time.sleep(10)
                         counter += 1
                         if counter == 5:
@@ -229,7 +231,7 @@ def container_vuln_csv():
         else:
             debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),container_list_pull_URL, counter))
             debug_file.write("Not feeling well...sleeping 10 secs\n")
-            print "Not feeling well - sleeping 10 secs"
+            print("Not feeling well - sleeping 10 secs")
             time.sleep(10)
             counter += 1
             if counter == 5:
@@ -285,7 +287,7 @@ def container_vuln_csv():
                     else:
                         debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),container_details_url, counter))
                         debug_file.write("Not feeling well...sleeping 10 secs\n")
-                        print "Not feeling well - sleeping 10 secs"
+                        print("Not feeling well - sleeping 10 secs")
                         time.sleep(10)
                         counter += 1
                         if counter == 5:
@@ -307,7 +309,7 @@ def container_vuln_csv():
                     else:
                         debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),image_details_url, counter))
                         debug_file.write("Not feeling well...sleeping 10 secs\n")
-                        print "Not feeling well - sleeping 10 secs"
+                        print("Not feeling well - sleeping 10 secs")
                         time.sleep(10)
                         counter += 1
                         if counter == 5:
