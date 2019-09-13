@@ -1,7 +1,6 @@
 # Image and Container Vulnerability CSV creation
 
 This is an example script on creating two CSV files from the Qualys Container Security API for both images and containers respectively.
-This script is provided with no warrantee and is provided as an example on how to accomplish making these files in Python 2.7.x
 
 *Info* : Python script creates CSV files for vulnerability data from Qualys Cloud Security w.r.t details provided in "./config.yml".
        Script debug info will be logged in ./debug/debug_file.txt
