@@ -34,15 +34,22 @@ Provide script configuration information for vulnerability severity ratings and 
 
 ## Script Requirements
 This script is tested on Python 3.
-This script requires the following PIP modules to run
-Modules: sys, requests, datetime, os, time, pyyaml, json, base64
 
-Example Python module install
-MAC/Linux "pip install requests"
-Windows "python -m pip install requests"
+This script requires the following PIP modules to run:
+  sys, requests, datetime, os, time, pyyaml, json, base64
+
+### Example Python module install
+MAC/Linux:
+```
+pip install requests
+```
+Windows:
+```
+python -m pip install requests
+```
 
 ## Debug
-Debug file for script run, located in ./debug folder with time/date stamp per line. To disable debug, comment out all lines containing "debug"
+Debug file for script run, located in `debug` folder with time/date stamp per line. To disable debug, comment out all lines containing `debug` in the script.
 
 # License
 *THIS SCRIPT IS PROVIDED TO YOU "AS IS." TO THE EXTENT PERMITTED BY LAW, QUALYS HEREBY DISCLAIMS ALL WARRANTIES AND LIABILITY FOR THE PROVISION OR USE OF THIS SCRIPT. IN NO EVENT SHALL THESE SCRIPTS BE DEEMED TO BE CLOUD SERVICES AS PROVIDED BY QUALYS*
