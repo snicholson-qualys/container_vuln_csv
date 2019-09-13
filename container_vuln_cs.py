@@ -48,7 +48,8 @@ def config():
 
 def Get_Call(username,password,URL):
     usrPass = str(username)+':'+str(password)
-    b64Val = base64.b64encode(usrPass)
+    usrPassBytes = bytes(usrPass, "utf-8")
+    b64Val = base64.b64encode(usrPassBytes).decode("utf-8")
     headers = {
         'Accept': '*/*',
         'content-type': 'application/json',
