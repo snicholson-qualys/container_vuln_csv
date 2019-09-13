@@ -2,7 +2,7 @@
 
 This is an example script on creating two CSV files from the Qualys Container Security API for both images and containers respectively.
 
-*Info* : Python script creates CSV files for vulnerability data from Qualys Cloud Security w.r.t details provided in "./config.yml".
+*Info* : Python script creates CSV files for vulnerability data from Qualys Cloud Security w.r.t details provided in `./config.yml`.
        Script debug info will be logged in ./debug/debug_file.txt
 
 CSV File Info
@@ -12,7 +12,7 @@ CSV File Info
 *Vulnerability Container Report headers*
 >Registry,Repository,ImageID,Tag,Container,Hostname,Vulnerabiltiy ID,Severity,CVE Number,Published Date,Description,Patch Available
 
-#Qualys API Username and Password
+# Qualys API Username and Password
 This script is configured to read the Qualys User name and Password from OS Environment Variables
 QUALYS_API_USERNAME = Qualys API Username
 QUALYS_API_PASSWORD = Base64 encoded Password
