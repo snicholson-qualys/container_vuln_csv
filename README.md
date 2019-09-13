@@ -39,10 +39,9 @@ export QUALYS_API_USERNAME=frankspassword
 This script is tested on Python 3.
 
 This script requires the following PIP modules to run:
-  sys, requests, datetime, os, time, pyyaml, json, base64
+  requests, datetime, pyyaml
 
-### Example Python module install
-The required modules can be installed with:
+These modules can be installed with:
 ```
 pip install -r requirements.txt
 ```
