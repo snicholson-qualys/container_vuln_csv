@@ -42,14 +42,12 @@ This script requires the following PIP modules to run:
   sys, requests, datetime, os, time, pyyaml, json, base64
 
 ### Example Python module install
-MAC/Linux:
+The required modules can be installed with:
 ```
-pip install requests
+pip install -r requirements.txt
 ```
-Windows:
-```
-python -m pip install requests
-```
+
+You may wish to use a [python virtual environment](https://docs.python.org/3/library/venv.html) as to not pollute your host system.
 
 ## Debug
 Debug file for script run, located in `debug` folder with time/date stamp per line. To disable debug, comment out all lines containing `debug` in the script.
