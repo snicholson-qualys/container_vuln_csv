@@ -37,7 +37,7 @@ Provide script configuration information for vulnerability severity ratings and 
   apiURL: "Qualys API URL base (https:// - > .com, no trailing '/')"
 
 # Script Requirements
-This script is written in Python 2.7.x (X > 10)
+This script is tested on Python 3.
 This script requires the following PIP modules to run
 Modules: sys, requests, datetime, os, time, pyyaml, json, base64
 
