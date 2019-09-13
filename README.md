@@ -12,7 +12,7 @@ CSV File Info
 *Vulnerability Container Report headers*
 >Registry,Repository,ImageID,Tag,Container,Hostname,Vulnerabiltiy ID,Severity,CVE Number,Published Date,Description,Patch Available
 
-# Qualys API Username and Password
+## Qualys API Username and Password
 This script is configured to read the Qualys User name and Password from OS Environment Variables
 QUALYS_API_USERNAME = Qualys API Username
 QUALYS_API_PASSWORD = Base64 encoded Password
@@ -25,14 +25,14 @@ to encode the password using base64 encoding execute the following command subst
 export $QUALYS_API_PASSWORD = `echo -n "APIpassword" | base64`
 
 
-# Script configuration
+## Script configuration
 *config.yml*
 Provide script configuration information for vulnerability severity ratings and Qualys API URL
 
   vulnerabilities_to_report: string value of severity ratings to include (**acceptable entries 54321, 5432, 543, 54, or 5**)
   apiURL: "Qualys API URL base (https:// - > .com, no trailing '/')"
 
-# Script Requirements
+## Script Requirements
 This script is tested on Python 3.
 This script requires the following PIP modules to run
 Modules: sys, requests, datetime, os, time, pyyaml, json, base64
@@ -41,7 +41,7 @@ Example Python module install
 MAC/Linux "pip install requests"
 Windows "python -m pip install requests"
 
-# Debug
+## Debug
 Debug file for script run, located in ./debug folder with time/date stamp per line. To disable debug, comment out all lines containing "debug"
 
 # License
