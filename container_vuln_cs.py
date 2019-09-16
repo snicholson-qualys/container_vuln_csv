@@ -16,6 +16,20 @@ import json
 import base64
 import logging.config
 
+# setup_http_session sets up global http session variable for HTTP connection sharing
+def setup_http_session():
+    global httpSession
+
+    httpSession = requests.Session()
+
+# setup_credentials builds HTTP auth string and base64 encodes it to minimize recalculation
+def setup_credentials(username, password):
+    global httpCredentials
+
+    usrPass = str(username)+':'+str(password)
+    usrPassBytes = bytes(usrPass, "utf-8")
+    httpCredentials = base64.b64encode(usrPassBytes).decode("utf-8")
+
 def setup_logging(default_path='./config/logging.yml',default_level=logging.INFO,env_key='LOG_CFG'):
     """Setup logging configuration"""
     if not os.path.exists("log"):
@@ -47,16 +61,16 @@ def config():
 
 
 def Get_Call(username,password,URL):
-    usrPass = str(username)+':'+str(password)
-    usrPassBytes = bytes(usrPass, "utf-8")
-    b64Val = base64.b64encode(usrPassBytes).decode("utf-8")
+    global httpSession
+    global httpCredentials
+
     headers = {
         'Accept': '*/*',
         'content-type': 'application/json',
-        'Authorization': "Basic %s" % b64Val
+        'Authorization': "Basic %s" % httpCredentials
     }
 
-    r = requests.get(URL, headers=headers, verify=True)
+    r = httpSession.get(URL, headers=headers, verify=True)
     #print r.text
     logger.debug("Repsonse code for GET to {0} - Response Code {1}".format(str(URL),str(r.status_code)))
     logger.debug("API Data for Response \n {}".format(str(r.text)))
@@ -67,6 +81,9 @@ def Get_Call(username,password,URL):
 def image_vuln_csv():
 
     username, password, vuln_rating, URL = config()
+    setup_http_session()
+    setup_credentials(username, password)
+
     if not os.path.exists("debug"):
         os.makedirs("debug")
     logger.debug("Starting image_vuln_csv")
@@ -212,6 +229,9 @@ def image_vuln_csv():
 
 def container_vuln_csv():
     username, password, vuln_rating, URL = config()
+    setup_http_session()
+    setup_credentials(username, password)
+
     if not os.path.exists("debug"):
         os.makedirs("debug")
 
