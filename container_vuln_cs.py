@@ -68,7 +68,6 @@ def config():
             sys.exit(1)
     return username, password, vuln_severity, URL, pageSize, exitOnError
 
-
 def Get_Call(username,password,URL):
     global httpSession
     global httpCredentials
@@ -318,7 +317,6 @@ def container_vuln_csv():
                         debug_file.write('{0} - API URL {1} error details: {2} \n'.format(datetime.datetime.utcnow(),container_details_url, container_detail_list))
                     if container_details_url_status == 200:
                         counter = 6
-
 
                     else:
                         debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),container_details_url, counter))
