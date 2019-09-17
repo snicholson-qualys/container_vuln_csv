@@ -45,7 +45,6 @@ def setup_logging(default_path='./config/logging.yml',default_level=logging.INFO
     else:
         logging.basicConfig(level=default_level)
 
-
 def config():
     with open('config.yml', 'r') as config_settings:
         config_info = yaml.load(config_settings, Loader=yaml.SafeLoader)
@@ -251,7 +250,6 @@ def container_vuln_csv():
     if not os.path.exists("debug"):
         os.makedirs("debug")
 
-
     debug_file = open("./debug/debug_file.txt", "a")
     debug_file.write('------------------------------Begin Container Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
     container_list_pull_URL = URL + "/csapi/v1.1/containers?pageSize=" + str(pageSize)
@@ -337,7 +335,6 @@ def container_vuln_csv():
                                 debug_file.write('{0} - Continuing\n'.format(datetime.datetime.utcnow()))
                                 continue
 
-
                 image_details_url = URL + '/csapi/v1.1/images/' + container['imageId']
                 image_detail_list, image_details_url_status = Get_Call(username,password,image_details_url)
                 counter = 0
@@ -404,8 +401,6 @@ def container_vuln_csv():
 
     debug_file.write('------------------------------Container End Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
     debug_file.close()
-
-
 
 
 if __name__ == '__main__':
