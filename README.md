@@ -23,6 +23,8 @@ Two configuration settings will need to be made by the user before using this sc
 
   `pageSize`: Maximum number of records to return for container and image lists. Default value is 50, maximum is 10000.
 
+  `exitOnError`: Boolean. If set to *True* script will exit on failed API calls during script. If *False*, script will attempt to gracefully continue.
+
 ### Qualys API Username and Password
 This script is configured to read the Qualys User name and Password from OS Environment Variables:
   `QUALYS_API_USERNAME`: Qualys API Username

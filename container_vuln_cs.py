@@ -59,10 +59,15 @@ def config():
         else:
             pageSize = 50
 
+        if "exitOnError" in config_info['defaults']:
+            exitOnError = config_info['defaults']['exitOnError']
+        else:
+            exitOnError = True
+
         if username == '' or password == '' or URL == '':
             print("Config information in ./config.yml not configured correctly. Exiting...")
             sys.exit(1)
-    return username, password, vuln_severity, URL, pageSize
+    return username, password, vuln_severity, URL, pageSize, exitOnError
 
 
 def Get_Call(username,password,URL):
@@ -85,7 +90,7 @@ def Get_Call(username,password,URL):
 
 def image_vuln_csv():
 
-    username, password, vuln_rating, URL, pageSize = config()
+    username, password, vuln_rating, URL, pageSize, exitOnError = config()
     setup_http_session()
     setup_credentials(username, password)
 
@@ -117,6 +122,7 @@ def image_vuln_csv():
             counter += 1
             if counter == 5:
                 debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),image_list_pull_URL))
+                # Not gating this first exit() on exitOnError. If this doesn't succeed, no reason to go further.
                 sys.exit(1)
 
     #print image_list_status
@@ -198,7 +204,12 @@ def image_vuln_csv():
                         counter += 1
                         if counter == 5:
                             debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),image_details_url))
-                            sys.exit(1)
+                            if exitOnError:
+                                debug_file.write('{0} - Exiting\n'.format(datetime.datetime.utcnow()))
+                                sys.exit(1)
+                            else:
+                                debug_file.write('{0} - Continuing\n'.format(datetime.datetime.utcnow()))
+                                continue
 
                 #print str(image['imageId'])
                 #print image
@@ -233,7 +244,7 @@ def image_vuln_csv():
     debug_file.close()
 
 def container_vuln_csv():
-    username, password, vuln_rating, URL, pageSize = config()
+    username, password, vuln_rating, URL, pageSize, exitOnError = config()
     setup_http_session()
     setup_credentials(username, password)
 
@@ -262,6 +273,7 @@ def container_vuln_csv():
             counter += 1
             if counter == 5:
                 debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),container_list_pull_URL))
+                # Not gating this first exit() on exitOnError. If this doesn't succeed, no reason to go further.
                 sys.exit(1)
         #print container_list_status
         # #print image_list
@@ -318,7 +330,12 @@ def container_vuln_csv():
                         counter += 1
                         if counter == 5:
                             debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),container_details_url))
-                            sys.exit(1)
+                            if exitOnError:
+                                debug_file.write('{0} - Exiting\n'.format(datetime.datetime.utcnow()))
+                                sys.exit(1)
+                            else:
+                                debug_file.write('{0} - Continuing\n'.format(datetime.datetime.utcnow()))
+                                continue
 
 
                 image_details_url = URL + '/csapi/v1.1/images/' + container['imageId']
@@ -340,7 +357,12 @@ def container_vuln_csv():
                         counter += 1
                         if counter == 5:
                             debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),image_details_url))
-                            sys.exit(1)
+                            if exitOnError:
+                                debug_file.write('{0} - Exiting\n'.format(datetime.datetime.utcnow()))
+                                sys.exit(1)
+                            else:
+                                debug_file.write('{0} - Continuing\n'.format(datetime.datetime.utcnow()))
+                                continue
                 registry = ''
                 #tags = ''
                 repository = ''
