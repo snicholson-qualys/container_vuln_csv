@@ -21,6 +21,8 @@ Two configuration settings will need to be made by the user before using this sc
 
   `apiURL`: Qualys API URL base (https:// - > .com, without a trailing '/'. e.g. `https://qualysapi.qg2.apps.qualys.com` )
 
+  `pageSize`: Maximum number of records to return for container and image lists. Default value is 50, maximum is 10000.
+
 ### Qualys API Username and Password
 This script is configured to read the Qualys User name and Password from OS Environment Variables:
   `QUALYS_API_USERNAME`: Qualys API Username

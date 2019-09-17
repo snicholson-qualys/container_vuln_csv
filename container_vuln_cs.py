@@ -54,10 +54,15 @@ def config():
         password = os.environ["QUALYS_API_PASSWORD"]
         vuln_severity = str(config_info['defaults']['vulnerabilities_to_report']).rstrip()
         URL = str(config_info['defaults']['apiURL']).rstrip()
+        if "pageSize" in config_info['defaults']:
+            pageSize = config_info['defaults']['pageSize']
+        else:
+            pageSize = 50
+
         if username == '' or password == '' or URL == '':
             print("Config information in ./config.yml not configured correctly. Exiting...")
             sys.exit(1)
-    return username, password, vuln_severity, URL
+    return username, password, vuln_severity, URL, pageSize
 
 
 def Get_Call(username,password,URL):
@@ -80,7 +85,7 @@ def Get_Call(username,password,URL):
 
 def image_vuln_csv():
 
-    username, password, vuln_rating, URL = config()
+    username, password, vuln_rating, URL, pageSize = config()
     setup_http_session()
     setup_credentials(username, password)
 
@@ -89,7 +94,7 @@ def image_vuln_csv():
     logger.debug("Starting image_vuln_csv")
     debug_file = open("./debug/debug_file.txt", "a")
     debug_file.write('------------------------------Begin Image Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
-    image_list_pull_URL = URL + "/csapi/v1.1/images"
+    image_list_pull_URL = URL + "/csapi/v1.1/images?pageSize=" + str(pageSize)
     logger.debug("Image Pull URL {}".format(image_list_pull_URL))
     debug_file.write('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), image_list_pull_URL))
     counter = 0
@@ -228,7 +233,7 @@ def image_vuln_csv():
     debug_file.close()
 
 def container_vuln_csv():
-    username, password, vuln_rating, URL = config()
+    username, password, vuln_rating, URL, pageSize = config()
     setup_http_session()
     setup_credentials(username, password)
 
@@ -238,7 +243,7 @@ def container_vuln_csv():
 
     debug_file = open("./debug/debug_file.txt", "a")
     debug_file.write('------------------------------Begin Container Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
-    container_list_pull_URL = URL + "/csapi/v1.1/containers"
+    container_list_pull_URL = URL + "/csapi/v1.1/containers?pageSize=" + str(pageSize)
     debug_file.write('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), container_list_pull_URL))
     counter = 0
     while counter < 5:
