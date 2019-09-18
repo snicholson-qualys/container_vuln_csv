@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Author: Sean Nicholson
 # Purpose: To iterate the Container Security API and export a CSV of image and container vulns
@@ -7,11 +8,27 @@
 # 09.04.2019 - Changed API U/P to read from env variables instead of config file
 # 09.12.2010 - v1.1 Added some logging
 
+from __future__ import print_function
+from builtins import str
 import sys, requests, datetime, os, time, logging
 import yaml
 import json
 import base64
 import logging.config
+
+# setup_http_session sets up global http session variable for HTTP connection sharing
+def setup_http_session():
+    global httpSession
+
+    httpSession = requests.Session()
+
+# setup_credentials builds HTTP auth string and base64 encodes it to minimize recalculation
+def setup_credentials(username, password):
+    global httpCredentials
+
+    usrPass = str(username)+':'+str(password)
+    usrPassBytes = bytes(usrPass, "utf-8")
+    httpCredentials = base64.b64encode(usrPassBytes).decode("utf-8")
 
 def setup_logging(default_path='./config/logging.yml',default_level=logging.INFO,env_key='LOG_CFG'):
     """Setup logging configuration"""
@@ -28,7 +45,6 @@ def setup_logging(default_path='./config/logging.yml',default_level=logging.INFO
     else:
         logging.basicConfig(level=default_level)
 
-
 def config():
     with open('config.yml', 'r') as config_settings:
         config_info = yaml.load(config_settings, Loader=yaml.SafeLoader)
@@ -37,22 +53,32 @@ def config():
         password = os.environ["QUALYS_API_PASSWORD"]
         vuln_severity = str(config_info['defaults']['vulnerabilities_to_report']).rstrip()
         URL = str(config_info['defaults']['apiURL']).rstrip()
-        if username == '' or password == '' or URL == '':
-            print "Config information in ./config.yml not configured correctly. Exiting..."
-            sys.exit(1)
-    return username, password, vuln_severity, URL
+        if "pageSize" in config_info['defaults']:
+            pageSize = config_info['defaults']['pageSize']
+        else:
+            pageSize = 50
 
+        if "exitOnError" in config_info['defaults']:
+            exitOnError = config_info['defaults']['exitOnError']
+        else:
+            exitOnError = True
+
+        if username == '' or password == '' or URL == '':
+            print("Config information in ./config.yml not configured correctly. Exiting...")
+            sys.exit(1)
+    return username, password, vuln_severity, URL, pageSize, exitOnError
 
 def Get_Call(username,password,URL):
-    usrPass = str(username)+':'+str(password)
-    b64Val = base64.b64encode(usrPass)
+    global httpSession
+    global httpCredentials
+
     headers = {
         'Accept': '*/*',
         'content-type': 'application/json',
-        'Authorization': "Basic %s" % b64Val
+        'Authorization': "Basic %s" % httpCredentials
     }
 
-    r = requests.get(URL, headers=headers, verify=True)
+    r = httpSession.get(URL, headers=headers, verify=True)
     #print r.text
     logger.debug("Repsonse code for GET to {0} - Response Code {1}".format(str(URL),str(r.status_code)))
     logger.debug("API Data for Response \n {}".format(str(r.text)))
@@ -62,13 +88,16 @@ def Get_Call(username,password,URL):
 
 def image_vuln_csv():
 
-    username, password, vuln_rating, URL = config()
+    username, password, vuln_rating, URL, pageSize, exitOnError = config()
+    setup_http_session()
+    setup_credentials(username, password)
+
     if not os.path.exists("debug"):
         os.makedirs("debug")
     logger.debug("Starting image_vuln_csv")
     debug_file = open("./debug/debug_file.txt", "a")
     debug_file.write('------------------------------Begin Image Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
-    image_list_pull_URL = URL + "/csapi/v1.1/images"
+    image_list_pull_URL = URL + "/csapi/v1.1/images?pageSize=" + str(pageSize)
     logger.debug("Image Pull URL {}".format(image_list_pull_URL))
     debug_file.write('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), image_list_pull_URL))
     counter = 0
@@ -86,11 +115,12 @@ def image_vuln_csv():
         else:
             debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),image_list_pull_URL, counter))
             debug_file.write("Not feeling well...sleeping 10 secs\n")
-            print "Not feeling well - sleeping 10 secs"
+            print("Not feeling well - sleeping 10 secs")
             time.sleep(10)
             counter += 1
             if counter == 5:
                 debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),image_list_pull_URL))
+                # Not gating this first exit() on exitOnError. If this doesn't succeed, no reason to go further.
                 sys.exit(1)
 
     #print image_list_status
@@ -167,12 +197,17 @@ def image_vuln_csv():
                     else:
                         debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),image_details_url, counter))
                         debug_file.write("Not feeling well...sleeping 10 secs\n")
-                        print "Not feeling well - sleeping 10 secs"
+                        print("Not feeling well - sleeping 10 secs")
                         time.sleep(10)
                         counter += 1
                         if counter == 5:
                             debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),image_details_url))
-                            sys.exit(1)
+                            if exitOnError:
+                                debug_file.write('{0} - Exiting\n'.format(datetime.datetime.utcnow()))
+                                sys.exit(1)
+                            else:
+                                debug_file.write('{0} - Continuing\n'.format(datetime.datetime.utcnow()))
+                                continue
 
                 #print str(image['imageId'])
                 #print image
@@ -207,14 +242,16 @@ def image_vuln_csv():
     debug_file.close()
 
 def container_vuln_csv():
-    username, password, vuln_rating, URL = config()
+    username, password, vuln_rating, URL, pageSize, exitOnError = config()
+    setup_http_session()
+    setup_credentials(username, password)
+
     if not os.path.exists("debug"):
         os.makedirs("debug")
 
-
     debug_file = open("./debug/debug_file.txt", "a")
     debug_file.write('------------------------------Begin Container Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
-    container_list_pull_URL = URL + "/csapi/v1.1/containers"
+    container_list_pull_URL = URL + "/csapi/v1.1/containers?pageSize=" + str(pageSize)
     debug_file.write('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), container_list_pull_URL))
     counter = 0
     while counter < 5:
@@ -228,11 +265,12 @@ def container_vuln_csv():
         else:
             debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),container_list_pull_URL, counter))
             debug_file.write("Not feeling well...sleeping 10 secs\n")
-            print "Not feeling well - sleeping 10 secs"
+            print("Not feeling well - sleeping 10 secs")
             time.sleep(10)
             counter += 1
             if counter == 5:
                 debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),container_list_pull_URL))
+                # Not gating this first exit() on exitOnError. If this doesn't succeed, no reason to go further.
                 sys.exit(1)
         #print container_list_status
         # #print image_list
@@ -280,17 +318,20 @@ def container_vuln_csv():
                     if container_details_url_status == 200:
                         counter = 6
 
-
                     else:
                         debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),container_details_url, counter))
                         debug_file.write("Not feeling well...sleeping 10 secs\n")
-                        print "Not feeling well - sleeping 10 secs"
+                        print("Not feeling well - sleeping 10 secs")
                         time.sleep(10)
                         counter += 1
                         if counter == 5:
                             debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),container_details_url))
-                            sys.exit(1)
-
+                            if exitOnError:
+                                debug_file.write('{0} - Exiting\n'.format(datetime.datetime.utcnow()))
+                                sys.exit(1)
+                            else:
+                                debug_file.write('{0} - Continuing\n'.format(datetime.datetime.utcnow()))
+                                continue
 
                 image_details_url = URL + '/csapi/v1.1/images/' + container['imageId']
                 image_detail_list, image_details_url_status = Get_Call(username,password,image_details_url)
@@ -306,12 +347,17 @@ def container_vuln_csv():
                     else:
                         debug_file.write('{0} - API URL {1} error encountered retry number {2}\n'.format(datetime.datetime.utcnow(),image_details_url, counter))
                         debug_file.write("Not feeling well...sleeping 10 secs\n")
-                        print "Not feeling well - sleeping 10 secs"
+                        print("Not feeling well - sleeping 10 secs")
                         time.sleep(10)
                         counter += 1
                         if counter == 5:
                             debug_file.write('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),image_details_url))
-                            sys.exit(1)
+                            if exitOnError:
+                                debug_file.write('{0} - Exiting\n'.format(datetime.datetime.utcnow()))
+                                sys.exit(1)
+                            else:
+                                debug_file.write('{0} - Continuing\n'.format(datetime.datetime.utcnow()))
+                                continue
                 registry = ''
                 #tags = ''
                 repository = ''
@@ -353,8 +399,6 @@ def container_vuln_csv():
 
     debug_file.write('------------------------------Container End Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
     debug_file.close()
-
-
 
 
 if __name__ == '__main__':

@@ -1,3 +1,5 @@
 defaults:
   vulnerabilities_to_report: 54321
+  pageSize: 50
   apiURL: ""
+  exitOnError: False
