@@ -2,11 +2,12 @@
 #
 # Author: Sean Nicholson
 # Purpose: To iterate the Container Security API and export a CSV of image and container vulns
-# version: 1.0.2
-# date: 09.04.2019
+# version: 1.1.1
+# date: 09.27.2019
 # 07.23.2019 - Added Loader=yaml.SafeLoader to address yaml warning
 # 09.04.2019 - Changed API U/P to read from env variables instead of config file
-# 09.12.2010 - v1.1 Added some logging
+# 09.12.2019 - v1.1 Added some logging
+# 09.27.2019 - v1.1.1 Added threading, error handling, and multiple performance improvements 
 
 from __future__ import print_function
 from builtins import str
