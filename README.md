@@ -21,9 +21,15 @@ Two configuration settings will need to be made by the user before using this sc
 
   `apiURL`: Qualys API URL base (https:// - > .com, without a trailing '/'. e.g. `https://qualysapi.qg2.apps.qualys.com` )
 
-  `pageSize`: Maximum number of records to return for container and image lists. Default value is 50, maximum is 10000.
+  `pageSize`: Maximum number of records to return for container and image lists. Default value is 1000, maximum is 10000.
 
   `exitOnError`: Boolean. If set to *True* script will exit on failed API calls during script. If *False*, script will attempt to gracefully continue.
+
+  `threadCount`: Thread count, used with --thread. Default value set to 4 - Acceptable Thread values for performance increase [2-8]
+
+  `imageReportHeaders`: Set headers for Image Vuln CSV - Default List set to -- ['registry', 'repository', 'imageId', 'tag', 'hostname', 'severity', 'qid', 'firstFound', 'cveids', 'title', 'typeDetected', 'patchAvailable' ]
+
+  `containerReportHeaders`: Set headers for Container Vuln CSV - Default List set to -- ['registry','registry', 'repository', 'imageId', 'containerId', 'name', 'hostname', 'ipAddress', 'qid', 'severity', 'cves', 'firstFound', 'title', 'typeDetected', 'patchAvailable']
 
 ### Qualys API Username and Password
 This script is configured to read the Qualys User name and Password from OS Environment Variables:
@@ -34,10 +40,12 @@ This script is configured to read the Qualys User name and Password from OS Envi
 These can be set on a mac/linux system with commands such as:
 ```
 export QUALYS_API_USERNAME=frank
-export QUALYS_API_USERNAME=frankspassword
+export QUALYS_API_PASSWORD=frankspassword
 ```
 
-*note*: We recommend you consider rammifications of leaving credentials in environment variables or shell history. Potential improvements to this script would include reading these credentials from more secure locations.
+The Script is configured to read in a base64 encoded password via a base64.decode
+
+*note*: We recommend you consider ramifications of leaving credentials in environment variables or shell history. Potential improvements to this script would include reading these credentials from more secure locations.
 
 ## Script Requirements
 This script is tested on Python 3.
@@ -52,9 +60,17 @@ pip install -r requirements.txt
 
 You may wish to use a [python virtual environment](https://docs.python.org/3/library/venv.html) as to not pollute your host system.
 
+# Logging
+Logging configuration files is located in ./config/logging.yml. To change logging behavior, make changes in this file. For information on Python 2.7 logging visit https://docs.python.org/3/library/logging.html
+Logging configuration
+File Handler writes to log/container-vuln-csv.log
+Maximum Log size = 10 MB ( logging.yml line 18 - maxBytes: 10485760 # 10MB)
+Backup file count = 5 (logging.yml line 19 - backupCount: 5)
+Log Level = INFO (Change to WARNING or higher for production - logging.yml line 15 - level: INFO)
+
+
 ## Debug
 Debug file for script run, located in `debug` folder with time/date stamp per line. To disable debug, comment out all lines containing `debug` in the script.
 
 # License
 *THIS SCRIPT IS PROVIDED TO YOU "AS IS." TO THE EXTENT PERMITTED BY LAW, QUALYS HEREBY DISCLAIMS ALL WARRANTIES AND LIABILITY FOR THE PROVISION OR USE OF THIS SCRIPT. IN NO EVENT SHALL THESE SCRIPTS BE DEEMED TO BE CLOUD SERVICES AS PROVIDED BY QUALYS*
-
