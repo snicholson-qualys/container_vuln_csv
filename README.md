@@ -60,17 +60,23 @@ pip install -r requirements.txt
 
 You may wish to use a [python virtual environment](https://docs.python.org/3/library/venv.html) as to not pollute your host system.
 
+
 # Logging
-Logging configuration files is located in ./config/logging.yml. To change logging behavior, make changes in this file. For information on Python 2.7 logging visit https://docs.python.org/3/library/logging.html
+Logging configuration files is located in ./config/logging.yml. To change logging behavior, make changes in this file. For information on Python 3 logging visit https://docs.python.org/3/library/logging.html
 Logging configuration
 File Handler writes to log/container-vuln-csv.log
 Maximum Log size = 10 MB ( logging.yml line 18 - maxBytes: 10485760 # 10MB)
 Backup file count = 5 (logging.yml line 19 - backupCount: 5)
-Log Level = INFO (Change to WARNING or higher for production - logging.yml line 15 - level: INFO)
+Log Level = DEBUG (Change to WARNING or higher for production - logging.yml line 15 - level: INFO)
 
 
-## Debug
-Debug file for script run, located in `debug` folder with time/date stamp per line. To disable debug, comment out all lines containing `debug` in the script.
+## Running the script
+
+No threading, serialized iterations
+>> python3 container_vuln_csv.py
+
+Threading, async processing of list iteration for singular calls to Qualys API for images and containers lists. Must configure ./config.yml['defaults']['threads'] for 2 to 8 threads, default value is 4
+>> python3 container_vuln_csv.py --thread
 
 # License
 *THIS SCRIPT IS PROVIDED TO YOU "AS IS." TO THE EXTENT PERMITTED BY LAW, QUALYS HEREBY DISCLAIMS ALL WARRANTIES AND LIABILITY FOR THE PROVISION OR USE OF THIS SCRIPT. IN NO EVENT SHALL THESE SCRIPTS BE DEEMED TO BE CLOUD SERVICES AS PROVIDED BY QUALYS*
