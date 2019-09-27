@@ -54,24 +54,38 @@ def setup_logging(default_path='./config/logging.yml',default_level=logging.INFO
 def config():
     with open('config.yml', 'r') as config_settings:
         config_info = yaml.load(config_settings, Loader=yaml.SafeLoader)
-        username = os.environ["QUALYS_API_USERNAME"]
-        #password = base64.b64decode(os.environ["QUALYS_API_PASSWORD"])
-        password = os.environ["QUALYS_API_PASSWORD"]
-        vuln_severity = str(config_info['defaults']['vulnerabilities_to_report']).rstrip()
-        threadCount = str(config_info['defaults']['threadCount']).rstrip()
-        imageReportHeaders = config_info['defaults']['imageReportHeaders']
-        containerReportHeaders = config_info['defaults']['containerReportHeaders']
-        URL = str(config_info['defaults']['apiURL']).rstrip()
-        if "pageSize" in config_info['defaults']:
-            pageSize = config_info['defaults']['pageSize']
-        else:
-            pageSize = 50
+        try:
+            username = os.environ["QUALYS_API_USERNAME"]
+            #password = base64.b64decode(os.environ["QUALYS_API_PASSWORD"])
+            password = os.environ["QUALYS_API_PASSWORD"]
+        except KeyError as e:
+            logger.critical("Critical Env Variable Key Error - missing configuration item {0}".format(str(e)))
+            logger.critical("Please review README for required configuration to run script")
+            sys.exit(1)
+        try:
+            vuln_severity = str(config_info['defaults']['vulnerabilities_to_report']).rstrip()
+            threadCount = str(config_info['defaults']['threadCount']).rstrip()
+            imageReportHeaders = config_info['defaults']['imageReportHeaders']
+            containerReportHeaders = config_info['defaults']['containerReportHeaders']
+            URL = str(config_info['defaults']['apiURL']).rstrip()
+            if "pageSize" in config_info['defaults']:
+                pageSize = config_info['defaults']['pageSize']
+            else:
+                pageSize = 50
 
-        if "exitOnError" in config_info['defaults']:
-            exitOnError = config_info['defaults']['exitOnError']
-        else:
-            exitOnError = True
-
+            if "exitOnError" in config_info['defaults']:
+                exitOnError = config_info['defaults']['exitOnError']
+            else:
+                exitOnError = True
+        except KeyError as e:
+            logger.critical("Critical ./config.yml Key Error - missing configuration item {0}".format(str(e)))
+            logger.critical("Please review README for required configuration to run script")
+            sys.exit(1)
+        if URL == "<QUALYS_API_URL>":
+            logger.critical("Critical ./config.yml Key Error - missing configuration item Qualys API URL")
+            logger.critical("Please check for https://www.qualys.com/docs/qualys-container-security-api-guide.pdf for the correct Qualys API URL for your subscription")
+            logger.critical("Please review README for required configuration to run script")
+            sys.exit(1)
         if username == '' or password == '' or URL == '':
             logger.critical("Config information in ./config.yml not configured correctly. Exiting...")
             sys.exit(1)
