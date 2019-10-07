@@ -72,11 +72,14 @@ Log Level = DEBUG (Change to WARNING or higher for production - logging.yml line
 
 ## Running the script
 
-No threading, serialized iterations
+No threading, serialized iterations, no software package details
 >> python3 container_vuln_csv.py
 
 Threading, async processing of list iteration for singular calls to Qualys API for images and containers lists. Must configure ./config.yml['defaults']['threads'] for 2 to 8 threads, default value is 4
 >> python3 container_vuln_csv.py --thread
+
+Create report with one row per vulnerable software package per image/container instead of one row per CVE.
+>> python3 container_vuln_csv.py --software
 
 # License
 *THIS SCRIPT IS PROVIDED TO YOU "AS IS." TO THE EXTENT PERMITTED BY LAW, QUALYS HEREBY DISCLAIMS ALL WARRANTIES AND LIABILITY FOR THE PROVISION OR USE OF THIS SCRIPT. IN NO EVENT SHALL THESE SCRIPTS BE DEEMED TO BE CLOUD SERVICES AS PROVIDED BY QUALYS*

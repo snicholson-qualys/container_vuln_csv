@@ -2,12 +2,14 @@
 #
 # Author: Sean Nicholson
 # Purpose: To iterate the Container Security API and export a CSV of image and container vulns
-# version: 1.1.1
-# date: 09.27.2019
+# version: 1.1.2
+# date: 10.07.2019
 # 07.23.2019 - Added Loader=yaml.SafeLoader to address yaml warning
 # 09.04.2019 - Changed API U/P to read from env variables instead of config file
 # 09.12.2019 - v1.1 Added some logging
-# 09.27.2019 - v1.1.1 Added threading, error handling, and multiple performance improvements 
+# 09.27.2019 - v1.1.1 Added threading, error handling, and multiple performance improvements
+# 10.07.2019 - v1.1.2 Add software package information to report softwarePackage, currentVersion, fixVersion
+#              added --software argument to create report with one row per vuln software package, per image/container
 
 from __future__ import print_function
 from builtins import str
@@ -338,13 +340,35 @@ def imageVulns(image_details_url):
             firstDate = str(datetime.datetime.utcfromtimestamp(float(firstFound)).strftime('%Y-%m-%d %H:%M:%S'))
             #print firstDate
             row = {}
-            if vulns['cveids']:
-                for cves in vulns['cveids']:
-                    row.update({"registry": registry, "repository": repository, "imageId": image_detail_list['imageId'], "tag": tags, "hostname": hostname, "qid": vulns['qid'], "severity": vulns['severity'], "cveids": str(cves), "firstFound": firstDate, "title": vulns['title'], "typeDetected":vulns['typeDetected'],"patchAvailable": str(patchable)})
+            softwarePackage = []
+            currentVersion = []
+            fixVersion = []
+            cves = []
+            if args.software:
+                if vulns['cveids']:
+                    for cve in vulns['cveids']:
+                        cves.append(str(cve))
+                    logger.debug("CVEs found: {}".format(str(cves)))
+                if vulns['software']:
+                    for software in vulns['software']:
+                        row.update({"registry": registry, "repository": repository, "imageId": image_detail_list['imageId'], "tag": tags, "hostname": hostname, "qid": vulns['qid'], "severity": vulns['severity'], "cveids": str(cves).strip('[]'), "firstFound": firstDate, "title": vulns['title'], "typeDetected":vulns['typeDetected'],"patchAvailable": str(patchable), 'softwarePackage': software['name'], 'currentVersion': software['version'], 'fixVersion': software['fixVersion']})
+                        imageReport['report'].append(dict(row))
+                else:
+                    row.update({"registry": registry, "repository": repository, "imageId": image_detail_list['imageId'], "tag": tags, "hostname": hostname, "qid": vulns['qid'], "severity": vulns['severity'], "cveids": str(cves).strip('[]'), "firstFound": firstDate, "title": vulns['title'], "typeDetected":vulns['typeDetected'],"patchAvailable": str(patchable), 'softwarePackage': '', 'currentVersion': '', 'fixVersion': ''})
                     imageReport['report'].append(dict(row))
             else:
-                row.update({"registry": registry, "repository": repository, "imageId": image_detail_list['imageId'], "tag": tags, "hostname": hostname, "qid": vulns['qid'], "severity": vulns['severity'], "cveids": "", "firstFound": firstDate, "title": vulns['title'], "typeDetected":vulns['typeDetected'],"patchAvailable": str(patchable)})
-                imageReport['report'].append(dict(row))
+                if vulns['software']:
+                    for software in vulns['software']:
+                        softwarePackage.append(str(software['name']))
+                        currentVersion.append(str(software['version']))
+                        fixVersion.append(str(software['fixVersion']))
+                if vulns['cveids']:
+                    for cve in vulns['cveids']:
+                        row.update({"registry": registry, "repository": repository, "imageId": image_detail_list['imageId'], "tag": tags, "hostname": hostname, "qid": vulns['qid'], "severity": vulns['severity'], "cveids": str(cve), "firstFound": firstDate, "title": vulns['title'], "typeDetected":vulns['typeDetected'],"patchAvailable": str(patchable), 'softwarePackage': str(softwarePackage).strip('[]'), 'currentVersion': str(currentVersion).strip('[]'), 'fixVersion': str(fixVersion).strip('[]')})
+                        imageReport['report'].append(dict(row))
+                else:
+                    row.update({"registry": registry, "repository": repository, "imageId": image_detail_list['imageId'], "tag": tags, "hostname": hostname, "qid": vulns['qid'], "severity": vulns['severity'], "cveids": "", "firstFound": firstDate, "title": vulns['title'], "typeDetected":vulns['typeDetected'],"patchAvailable": str(patchable), 'softwarePackage': str(softwarePackage).strip('[]'), 'currentVersion': str(currentVersion).strip('[]'), 'fixVersion': str(fixVersion).strip('[]')})
+                    imageReport['report'].append(dict(row))
 
     return imageReport
 
@@ -479,7 +503,7 @@ def container_vuln_csv(imageShareData):
                 reportData.extend(data)
         logger.debug("reportData is type {}".format(type(reportData)))
         logger.debug("reportData is length = {}".format(len(reportData)))
-        logger.info("*** Threading Report Data is complete *** \n\n\n\n {}".format(str(reportData)[:10000]))
+        logger.debug("*** Threading Report Data is complete *** \n\n\n\n {}".format(str(reportData)[:1000]))
         writeCsv(reportData, "Container", containerReportHeaders)
 
 # Get API call for container details for vuln info parsing /csapi/v1.1/containers/containerId
@@ -547,22 +571,43 @@ def containerVulnDetails(containerWithVuln, imageShareData):
 
             firstFound = vulns['firstFound'][0:10]
             firstDate = str(datetime.datetime.utcfromtimestamp(float(firstFound)).strftime('%Y-%m-%d %H:%M:%S'))
+            softwarePackage = []
+            currentVersion = []
+            fixVersion = []
+            cves = []
+            if args.software:
+                if vulns['cveids']:
+                    for cve in vulns['cveids']:
+                        cves.append(str(cve))
+                    logger.debug("CVEs found: {}".format(str(cves)))
+                if vulns['software']:
+                    for software in vulns['software']:
+                        row = {"registry": registry, "repository": repository, "imageId": container_detail_list['imageId'], "containerId": container_detail_list['containerId'], "name": container_detail_list['name'], "hostname": hostname, "ipAddress": container_detail_list['host']['ipAddress'], "qid": vulns['qid'], "severity": vulns['severity'], "cves": str(cves).strip('[]'), "firstFound": firstDate, "title": vulns['title'], "typeDetected": vulns['typeDetected'], "patchAvailable": str(patchable), 'softwarePackage': str(software['name']), 'currentVersion': str(software['version']), 'fixVersion': str(software['fixVersion'])}
+                        containerVulnData.append(dict(row))
+                else:
+                    row = {"registry": registry, "repository": repository, "imageId": container_detail_list['imageId'], "containerId": container_detail_list['containerId'], "name": container_detail_list['name'], "hostname": hostname, "ipAddress": container_detail_list['host']['ipAddress'], "qid": vulns['qid'], "severity": vulns['severity'], "cves": str(cves).strip('[]'), "firstFound": firstDate, "title": vulns['title'], "typeDetected": vulns['typeDetected'], "patchAvailable": str(patchable), 'softwarePackage': '', 'currentVersion': '', 'fixVersion': ''}
+                    containerVulnData.append(dict(row))
 
-            if vulns['cveids']:
-                for cves in vulns['cveids']:
+            else:
+                if vulns['software']:
+                    for software in vulns['software']:
+                        softwarePackage.append(str(software['name']))
+                        currentVersion.append(str(software['version']))
+                        fixVersion.append(str(software['fixVersion']))
+                if vulns['cveids']:
+                    for cve in vulns['cveids']:
+                        # old code for previous version writing out to CSV directly
+                        #row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}\n".format(registry,repository,container['imageId'],container['containerId'],container['name'],hostname,container['host']['ipAddress'],vulns['qid'],vulns['severity'],str(cves),firstDate,vulns['title'],vulns['typeDetected'],str(patchable))
+                        row = {"registry": registry, "repository": repository, "imageId": container_detail_list['imageId'], "containerId": container_detail_list['containerId'], "name": container_detail_list['name'], "hostname": hostname, "ipAddress": container_detail_list['host']['ipAddress'], "qid": vulns['qid'], "severity": vulns['severity'], "cves": str(cve), "firstFound": firstDate, "title": vulns['title'], "typeDetected": vulns['typeDetected'], "patchAvailable": str(patchable), 'softwarePackage': str(softwarePackage).strip('[]'), 'currentVersion': str(currentVersion).strip('[]'), 'fixVersion': str(fixVersion).strip('[]') }
+                        containerVulnData.append(dict(row))
+                        #ofile.write(row)
+                else:
                     # old code for previous version writing out to CSV directly
-                    #row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}\n".format(registry,repository,container['imageId'],container['containerId'],container['name'],hostname,container['host']['ipAddress'],vulns['qid'],vulns['severity'],str(cves),firstDate,vulns['title'],vulns['typeDetected'],str(patchable))
+                    #row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}\n".format(registry,repository,container['imageId'],container['containerId'],container['name'],hostname,container['host']['ipAddress'],vulns['qid'],vulns['severity'],"",firstDate,vulns['title'],vulns['typeDetected'],str(patchable))
 
-                    row = {"registry": registry, "repository": repository, "imageId": container_detail_list['imageId'], "containerId": container_detail_list['containerId'], "name": container_detail_list['name'], "hostname": hostname, "ipAddress": container_detail_list['host']['ipAddress'], "qid": vulns['qid'], "severity": vulns['severity'], "cves": str(cves), "firstFound": firstDate, "title": vulns['title'], "typeDetected": vulns['typeDetected'], "patchAvailable": str(patchable)}
+                    row = {"registry": registry, "repository": repository, "imageId": container_detail_list['imageId'], "containerId": container_detail_list['containerId'], "name": container_detail_list['name'], "hostname": hostname, "ipAddress": container_detail_list['host']['ipAddress'], "qid": vulns['qid'], "severity": vulns['severity'], "cves": "", "firstFound": firstDate, "title": vulns['title'], "typeDetected": vulns['typeDetected'], "patchAvailable": str(patchable), 'softwarePackage': str(softwarePackage).strip('[]'), 'currentVersion': str(currentVersion).strip('[]'), 'fixVersion': str(fixVersion).strip('[]')}
                     containerVulnData.append(dict(row))
                     #ofile.write(row)
-            else:
-                # old code for previous version writing out to CSV directly
-                #row = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}\n".format(registry,repository,container['imageId'],container['containerId'],container['name'],hostname,container['host']['ipAddress'],vulns['qid'],vulns['severity'],"",firstDate,vulns['title'],vulns['typeDetected'],str(patchable))
-
-                row = {"registry": registry, "repository": repository, "imageId": container_detail_list['imageId'], "containerId": container_detail_list['containerId'], "name": container_detail_list['name'], "hostname": hostname, "ipAddress": container_detail_list['host']['ipAddress'], "qid": vulns['qid'], "severity": vulns['severity'], "cves": "", "firstFound": firstDate, "title": vulns['title'], "typeDetected": vulns['typeDetected'], "patchAvailable": str(patchable)}
-                containerVulnData.append(dict(row))
-                #ofile.write(row)
     else:
         logger.info('{0} - *** No container vulnerabilities reported \n'.format(datetime.datetime.utcnow()))
     logger.debug("containerVulnData == \n {}".format(str(containerVulnData)[:100]))
@@ -571,6 +616,7 @@ def containerVulnDetails(containerWithVuln, imageShareData):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--thread", "-t", help="Run report generation via Python ThreadPoolExecutor with number of threads defined in ./config.yml", action="store_true")
+parser.add_argument("--software", "-s", help="Create report with row per software package in the CSV report", action="store_true")
 args = parser.parse_args()
 
 if __name__ == '__main__':
