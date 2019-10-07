@@ -3,6 +3,6 @@ defaults:
   pageSize: 1000
   apiURL: "<QUALYS_API_URL>"
   exitOnError: False
-  threadCount: 8
-  imageReportHeaders: ['registry', 'repository', 'imageId', 'tag', 'hostname', 'severity', 'qid', 'firstFound', 'cveids', 'title', 'typeDetected', 'patchAvailable' ]
-  containerReportHeaders: ['registry','registry', 'repository', 'imageId', 'containerId', 'name', 'hostname', 'ipAddress', 'qid', 'severity', 'cves', 'firstFound', 'title', 'typeDetected', 'patchAvailable']
+  threadCount: 4
+  imageReportHeaders: ['registry', 'repository', 'imageId', 'tag', 'hostname', 'severity', 'qid', 'firstFound', 'cveids', 'title', 'typeDetected', 'patchAvailable', 'softwarePackage', 'currentVersion', 'fixVersion' ]
+  containerReportHeaders: ['registry','registry', 'repository', 'imageId', 'containerId', 'name', 'hostname', 'ipAddress', 'qid', 'severity', 'cves', 'firstFound', 'title', 'typeDetected', 'patchAvailable', 'softwarePackage', 'currentVersion', 'fixVersion']
