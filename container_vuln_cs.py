@@ -250,8 +250,9 @@ def imageDetails(full_image_list):
         else:
             ### Thread troubleshooting single thread linear iteration of containers
             for imageURL in imageWithVulns:
-                data = containerVulnDetails(imageURL)
-                reportData.extend(data)
+                data = imageVulns(imageURL)
+                reportData['report'].extend(data['report'])
+                reportData['imageDataShare'].update(data['imageDataShare'])
 
 
         logger.debug("reportData[report] is type {}".format(type(reportData['report'])))
