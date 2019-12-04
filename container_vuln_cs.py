@@ -249,7 +249,7 @@ def imageDetails(full_image_list):
                         logger.debug("data is \n {}".format(str(data)[:100]))
         else:
             ### Thread troubleshooting single thread linear iteration of containers
-            for imageURL in imageWithVuln:
+            for imageURL in imageWithVulns:
                 data = containerVulnDetails(imageURL)
                 reportData.extend(data)
 
