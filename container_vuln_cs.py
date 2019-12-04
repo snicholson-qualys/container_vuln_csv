@@ -615,13 +615,14 @@ def containerVulnDetails(containerWithVuln, imageShareData):
     logger.debug('------------------------------Container End Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
     return containerVulnData
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--thread", "-t", help="Run report generation via Python ThreadPoolExecutor with number of threads defined in ./config.yml", action="store_true")
-parser.add_argument("--software", "-s", help="Create report with row per software package in the CSV report", action="store_true")
-args = parser.parse_args()
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--thread", "-t", help="Run report generation via Python ThreadPoolExecutor with number of threads defined in ./config.yml", action="store_true")
+    parser.add_argument("--software", "-s", help="Create report with row per software package in the CSV report", action="store_true")
+    args = parser.parse_args()
+
     setup_logging()
     logger = logging.getLogger(__name__)
     imageShareData = image_vuln_csv()
     container_vuln_csv(imageShareData)
+
