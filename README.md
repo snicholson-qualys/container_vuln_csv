@@ -72,6 +72,9 @@ Log Level = DEBUG (Change to WARNING or higher for production - logging.yml line
 
 ## Running the script
 
+View command line options for running script.
+>> python3 container_vuln_csv.py --help
+
 No threading, serialized iterations, no software package details
 >> python3 container_vuln_csv.py
 
@@ -80,6 +83,16 @@ Threading, async processing of list iteration for singular calls to Qualys API f
 
 Create report with one row per vulnerable software package per image/container instead of one row per CVE.
 >> python3 container_vuln_csv.py --software
+
+Create report for images with an updated timestamp greater than the specified value, must be used with --imagesonly or -i.
+>> python3 container_vuln_csv.py --updated epochTimeStamp
+
+Record progress of max images updated tiem stamp and store in Last_Updated_Result, next run of will return image updated greater than the stored value, must be used with --imagesonly or -i.
+>> python3 container_vuln_csv.py --recordprogress
+
+Create report with only image information, the containers report will be skipped.
+>> python3 container_vuln_csv.py --imagesonly
+
 
 # License
 *THIS SCRIPT IS PROVIDED TO YOU "AS IS." TO THE EXTENT PERMITTED BY LAW, QUALYS HEREBY DISCLAIMS ALL WARRANTIES AND LIABILITY FOR THE PROVISION OR USE OF THIS SCRIPT. IN NO EVENT SHALL THESE SCRIPTS BE DEEMED TO BE CLOUD SERVICES AS PROVIDED BY QUALYS*

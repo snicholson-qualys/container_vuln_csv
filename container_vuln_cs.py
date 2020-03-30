@@ -10,6 +10,8 @@
 # 09.27.2019 - v1.1.1 Added threading, error handling, and multiple performance improvements
 # 10.07.2019 - v1.1.2 Add software package information to report softwarePackage, currentVersion, fixVersion
 #              added --software argument to create report with one row per vuln software package, per image/container
+# 03.30.2020 - v1.1.3 Add imagesonly option, pull by image updated greater than specified epochTime value,
+#              --recordprogress option, and bug fixes
 
 from __future__ import print_function
 from builtins import str
@@ -21,7 +23,8 @@ import logging.config
 import math
 import concurrent.futures
 import argparse
-
+#import os.path
+from os import path
 
 # setup_http_session sets up global http session variable for HTTP connection sharing
 def setup_http_session():
@@ -133,6 +136,10 @@ def writeCsv(findings, reportType, csvHeaders):
     logger.debug("Done writing data to CSV for: {}".format(str(csvHeaders)))
     ofile.close()
 
+def setConfig(updated):
+    f=open("./config/Last_Updated_Result", "w")
+    f.write(str(updated))
+    f.close()
 
 # API Call to /csapi/v1.1/images to get list of all images
 def image_vuln_csv():
@@ -150,7 +157,23 @@ def image_vuln_csv():
     full_image_list = []
     allResults = False
     while allResults == False:
-        image_list_pull_URL = URL + "/csapi/v1.1/images?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo))
+        if args.updated or args.recordprogress:
+            if path.exists("./config/Last_Updated_Result") and args.recordprogress:
+                f=open("./config/Last_Updated_Result", "r")
+                contents=f.read()
+                if contents:
+                    updated = contents
+                elif args.updated:
+                    updated = args.updated
+                else:
+                    updated = 0
+            elif args.updated:
+                updated = args.updated
+            elif args.recordprogress:
+                updated = 0
+            image_list_pull_URL = URL + "/csapi/v1.1/images?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo) + "&filter=updated>" + str(updated) + "&sort=updated:asc")
+        else:
+            image_list_pull_URL = URL + "/csapi/v1.1/images?pageSize=" + str(pageSize) + "&sort=updated:asc&pageNo={}".format(str(pageNo))
         logger.debug("Image Pull URL {}".format(image_list_pull_URL))
         logger.debug('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), image_list_pull_URL))
         counter = 0
@@ -185,17 +208,40 @@ def image_vuln_csv():
 
     logger.debug('{0} - Image list count: {1} \n'.format(datetime.datetime.utcnow(), str(len(full_image_list))))
     if len(full_image_list) > 0:
-        imageDataShare = imageDetails(full_image_list)
-    return imageDataShare
+        imageDataShare, maxUpdated = imageDetails(full_image_list)
+    return imageDataShare, maxUpdated
 
 # Parse image list for Images with Vulns
 def imageDetails(full_image_list):
     reportData=[]
+    lastUpdated = ''
     username, password, vuln_rating, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders = config()
     setup_http_session()
     setup_credentials(username, password)
     imageWithVulns=[]
+    '''
+    if path.exists("./config/Last_Updated_Result") and args.recordprogress:
+        f=open("Last_Updated_Result", "r")
+        contents=f.read()
+        if contents:
+            maxUpdated = contents
+        elif args.updated:
+            maxUpdated = args.updated
+        else:
+            maxUpdated = 0
+    elif args.updated:
+        maxUpdated = args.updated
+    elif args.recordprogress:
+        maxUpdated = 0
+        '''
+
     for image in full_image_list:
+        maxUpdated = ''
+        if "updated" in image.keys() and args.recordprogress:
+            lastUpdated = image["updated"]
+            if (lastUpdated is not None) and (lastUpdated > maxUpdated):
+              maxUpdated = lastUpdated
+
         image_detail_list = ''
         image_details_url_status = ''
         image_details_url = ''
@@ -249,9 +295,10 @@ def imageDetails(full_image_list):
                         logger.debug("data is \n {}".format(str(data)[:100]))
         else:
             ### Thread troubleshooting single thread linear iteration of containers
-            for imageURL in imageWithVuln:
-                data = containerVulnDetails(imageURL)
-                reportData.extend(data)
+            for imageURL in imageWithVulns:
+                data = imageVulns(imageURL)
+                if len(data) > 0:
+                    reportData['report'].extend(data['report'])
 
 
         logger.debug("reportData[report] is type {}".format(type(reportData['report'])))
@@ -260,16 +307,17 @@ def imageDetails(full_image_list):
         logger.debug("reportData[imageDataShare] is type {}".format(type(reportData['imageDataShare'])))
         logger.debug("reportData[imageDataShare] is length = {}".format(len(reportData['imageDataShare'])))
         #input("Press Enter to continue...")
-        logger.info("*** Threading Report Data is complete *** \n\n\n\n {}".format(str(reportData['report'])[:10000]))
+        logger.info("*** Threading Report Data is complete *** \n\n\n\n {}".format(str(reportData['report'])[:1000]))
         #input("Press Enter to continue...")
 
         #input("Press Enter to continue...")
         writeCsv(reportData['report'], "Image", imageReportHeaders)
 
-    return reportData['imageDataShare']
+    return reportData['imageDataShare'], maxUpdated
 
 # API Call to /csapi/v1.1/images/imageId to get Image and Vuln details
 def imageVulns(image_details_url):
+    logger.debug("Starting Image ID {}".format(str(image_details_url)))
     imageReport = {"report": [], "imageDataShare": {}}
     username, password, vuln_rating, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders = config()
     setup_http_session()
@@ -280,6 +328,7 @@ def imageVulns(image_details_url):
         while counter < 5:
 
             image_detail_list, image_details_url_status = Get_Call(username,password,image_details_url)
+            #logger.debug("Image Details List Response {0} \n Body: \n {1} \n".format(str(image_details_url_status), str(image_detail_list)))
             logger.debug('{0} - API URL {1} response status: {2} \n'.format(datetime.datetime.utcnow(),image_details_url, image_details_url_status))
             if image_details_url_status != 200:
                 logger.debug('{0} - API URL {1} error details: {2} \n'.format(datetime.datetime.utcnow(),image_details_url, image_detail_list))
@@ -305,28 +354,49 @@ def imageVulns(image_details_url):
         registry = ''
         tags = ''
         repository = ''
+        lastUpdated = ''
+
         if image_detail_list['repo']:
+            logger.debug("Image ID {0} - Repo {1}".format(str(image_detail_list['imageId']), str(image_detail_list['repo'])))
             repos = image_detail_list['repo']
             for repo in repos:
-                if repo['registry'] not in registry:
+                if repo['registry'] is None:
+                    continue
+                elif repo['registry'] not in registry:
                     registry += repo['registry'] + ";"
                 if repo['tag']:
                     if repo['tag'] not in tags:
                         tags += repo['tag'] + ";"
                 if repo['repository'] not in repository:
                     repository += repo['repository'] + ";"
-        try:
-            if image_detail_list['host']:
-                hostname = ""
-                for host in image_detail_list['host']:
-                    if host['hostname'] not in hostname:
-                        hostname += (host['hostname'] + ";")
+        #try:
+        if image_detail_list['host']:
+            logger.debug("Image ID {0} - Host {1}".format(str(image_detail_list['imageId']), str(image_detail_list['host'])))
+            hostname = ""
+            for host in image_detail_list['host']:
+                if "hostname" in host.keys():
+                    if host['hostname'] is None:
+                        continue
+                    else:
+                        logger.debug("image ID {0} - Hostname = {1}".format(str(image_detail_list['imageId']), str(host['hostname'])))
+                        if host['hostname'] not in hostname:
+                            logger.debug("Hostname not None")
+                            hostname += (host['hostname'] + ";")
+                            logger.debug("Hostname update: {}".format(str(hostname)))
 
-            else:
-                hostname = ""
+        else:
+            hostname = ""
+            '''
         except KeyError:
+            logger.debug("Key Error: {}".format(str(KeyError)))
             hostname = ""
             pass
+            '''
+        logger.debug("Processing image vuln")
+        logger.debug("Length of Vuln List: {}".format(len(image_detail_list['vulnerabilities'])))
+        logger.debug("Image ID {}".format(str(image_detail_list['imageId'])))
+        logger.debug("Image Vuln List \n {}".format(str(image_detail_list['vulnerabilities'])))
+        logger.debug("Vulns for Image ID {0} \n {1} \n".format(str(image_detail_list['imageId']),str(image_detail_list['vulnerabilities'])))
         imageReport['imageDataShare'].update({image_detail_list['imageId']: {'registry': str(registry), 'repository': str(repository)}})
         for vulns in image_detail_list['vulnerabilities']:
             if vulns['patchAvailable']:
@@ -344,6 +414,7 @@ def imageVulns(image_details_url):
             currentVersion = []
             fixVersion = []
             cves = []
+            logger.debug("Processing Image ID: {} for Vulns".format(str(image_detail_list['imageId'])))
             if args.software:
                 if vulns['cveids']:
                     for cve in vulns['cveids']:
@@ -364,9 +435,11 @@ def imageVulns(image_details_url):
                         fixVersion.append(str(software['fixVersion']))
                 if vulns['cveids']:
                     for cve in vulns['cveids']:
+                        logger.debug("Processing CVE {0} for Image ID: {1} for Vulns".format(str(cve),str(image_detail_list['imageId'])))
                         row.update({"registry": registry, "repository": repository, "imageId": image_detail_list['imageId'], "tag": tags, "hostname": hostname, "qid": vulns['qid'], "severity": vulns['severity'], "cveids": str(cve), "firstFound": firstDate, "title": vulns['title'], "typeDetected":vulns['typeDetected'],"patchAvailable": str(patchable), 'softwarePackage': str(softwarePackage).strip('[]'), 'currentVersion': str(currentVersion).strip('[]'), 'fixVersion': str(fixVersion).strip('[]')})
                         imageReport['report'].append(dict(row))
                 else:
+                    logger.debug("Processing No CVEs for Image ID: {} for Vulns".format(str(image_detail_list['imageId'])))
                     row.update({"registry": registry, "repository": repository, "imageId": image_detail_list['imageId'], "tag": tags, "hostname": hostname, "qid": vulns['qid'], "severity": vulns['severity'], "cveids": "", "firstFound": firstDate, "title": vulns['title'], "typeDetected":vulns['typeDetected'],"patchAvailable": str(patchable), 'softwarePackage': str(softwarePackage).strip('[]'), 'currentVersion': str(currentVersion).strip('[]'), 'fixVersion': str(fixVersion).strip('[]')})
                     imageReport['report'].append(dict(row))
 
@@ -388,7 +461,10 @@ def container_vuln_csv(imageShareData):
     counter = 0
     allResults = False
     while allResults == False:
-        container_list_pull_URL = URL + "/csapi/v1.1/containers?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo))
+        if args.updated:
+            container_list_pull_URL = URL + "/csapi/v1.1/containers?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo) + "&filter=updated>" + str(args.updated) + "&sort=updated:asc")
+        else:
+            container_list_pull_URL = URL + "/csapi/v1.1/containers?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo))
         logger.debug("Container Pull URL {}".format(container_list_pull_URL))
         logger.debug('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), container_list_pull_URL))
         counter = 0
@@ -617,10 +693,17 @@ def containerVulnDetails(containerWithVuln, imageShareData):
 parser = argparse.ArgumentParser()
 parser.add_argument("--thread", "-t", help="Run report generation via Python ThreadPoolExecutor with number of threads defined in ./config.yml", action="store_true")
 parser.add_argument("--software", "-s", help="Create report with row per software package in the CSV report", action="store_true")
+parser.add_argument("--updated", "-u", help="pull images based on updated field, in Linux epoch time")
+parser.add_argument("--recordprogress", "-r", help="Store last retrieved image updated time stamp and store in tracking file", action="store_true")
+parser.add_argument("--imagesonly", "-i", help="Store last retrieved image updated time stamp and store in tracking file", action="store_true")
+
 args = parser.parse_args()
 
 if __name__ == '__main__':
     setup_logging()
     logger = logging.getLogger(__name__)
-    imageShareData = image_vuln_csv()
-    container_vuln_csv(imageShareData)
+    imageShareData, lastUpdated = image_vuln_csv()
+    if args.recordprogress:
+        setConfig(lastUpdated)
+    if not args.imagesonly:
+        container_vuln_csv(imageShareData)
