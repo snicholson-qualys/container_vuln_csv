@@ -57,51 +57,45 @@ def setup_logging(default_path='./config/logging.yml',default_level=logging.INFO
 
 
 # Called to read in ./config.yml
-class Config:
-    config_read = False
-    def __init__(self):
+def config():
+    with open('config.yml', 'r') as config_settings:
+        config_info = yaml.load(config_settings, Loader=yaml.SafeLoader)
         try:
-            config_read
-        except NameError:
-            config_read = False
-        if config_read != True:
-            with open('config.yml', 'r') as config_settings:
-                config_info = yaml.load(config_settings, Loader=yaml.SafeLoader)
-                try:
-                    self.username = os.environ["QUALYS_API_USERNAME"]
-                    #self.password = base64.b64decode(os.environ["QUALYS_API_PASSWORD"])
-                    self.password = os.environ["QUALYS_API_PASSWORD"]
-                except KeyError as e:
-                    logger.critical("Critical Env Variable Key Error - missing configuration item {0}".format(str(e)))
-                    logger.critical("Please review README for required configuration to run script")
-                    sys.exit(1)
-                try:
-                    self.vuln_severity = str(config_info['defaults']['vulnerabilities_to_report']).rstrip()
-                    self.threadCount = str(config_info['defaults']['threadCount']).rstrip()
-                    self.imageReportHeaders = config_info['defaults']['imageReportHeaders']
-                    self.containerReportHeaders = config_info['defaults']['containerReportHeaders']
-                    self.URL = str(config_info['defaults']['apiURL']).rstrip()
-                    if "pageSize" in config_info['defaults']:
-                        self.pageSize = config_info['defaults']['pageSize']
-                    else:
-                        self.pageSize = 50
+            username = os.environ["QUALYS_API_USERNAME"]
+            #password = base64.b64decode(os.environ["QUALYS_API_PASSWORD"])
+            password = os.environ["QUALYS_API_PASSWORD"]
+        except KeyError as e:
+            logger.critical("Critical Env Variable Key Error - missing configuration item {0}".format(str(e)))
+            logger.critical("Please review README for required configuration to run script")
+            sys.exit(1)
+        try:
+            vuln_severity = str(config_info['defaults']['vulnerabilities_to_report']).rstrip()
+            threadCount = str(config_info['defaults']['threadCount']).rstrip()
+            imageReportHeaders = config_info['defaults']['imageReportHeaders']
+            containerReportHeaders = config_info['defaults']['containerReportHeaders']
+            URL = str(config_info['defaults']['apiURL']).rstrip()
+            if "pageSize" in config_info['defaults']:
+                pageSize = config_info['defaults']['pageSize']
+            else:
+                pageSize = 50
 
-                    if "exitOnError" in config_info['defaults']:
-                        self.exitOnError = config_info['defaults']['exitOnError']
-                    else:
-                        self.exitOnError = True
-                except KeyError as e:
-                    logger.critical("Critical ./config.yml Key Error - missing configuration item {0}".format(str(e)))
-                    logger.critical("Please review README for required configuration to run script")
-                    sys.exit(1)
-                if self.URL == "<QUALYS_API_URL>":
-                    logger.critical("Critical ./config.yml Key Error - missing configuration item Qualys API URL")
-                    logger.critical("Please check for https://www.qualys.com/docs/qualys-container-security-api-guide.pdf for the correct Qualys API URL for your subscription")
-                    logger.critical("Please review README for required configuration to run script")
-                    sys.exit(1)
-                if self.username == '' or self.password == '' or self.URL == '':
-                    logger.critical("Config information in ./config.yml not configured correctly. Exiting...")
-                    sys.exit(1)
+            if "exitOnError" in config_info['defaults']:
+                exitOnError = config_info['defaults']['exitOnError']
+            else:
+                exitOnError = True
+        except KeyError as e:
+            logger.critical("Critical ./config.yml Key Error - missing configuration item {0}".format(str(e)))
+            logger.critical("Please review README for required configuration to run script")
+            sys.exit(1)
+        if URL == "<QUALYS_API_URL>":
+            logger.critical("Critical ./config.yml Key Error - missing configuration item Qualys API URL")
+            logger.critical("Please check for https://www.qualys.com/docs/qualys-container-security-api-guide.pdf for the correct Qualys API URL for your subscription")
+            logger.critical("Please review README for required configuration to run script")
+            sys.exit(1)
+        if username == '' or password == '' or URL == '':
+            logger.critical("Config information in ./config.yml not configured correctly. Exiting...")
+            sys.exit(1)
+    return username, password, vuln_severity, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders
 
 # Get call for API queries to return json data and status code
 def Get_Call(username,password,URL):
@@ -150,13 +144,13 @@ def setConfig(updated):
 # API Call to /csapi/v1.1/images to get list of all images
 def image_vuln_csv():
 
-    report_config = Config()
+    username, password, vuln_rating, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders = config()
     setup_http_session()
-    setup_credentials(report_config.username, report_config.password)
+    setup_credentials(username, password)
     pageNo = 0
     logger.debug("Starting image_vuln_csv")
     logger.debug('------------------------------Begin Image Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
-
+    updated = 0
 
     counter = 0
 
@@ -180,25 +174,24 @@ def image_vuln_csv():
             image_list_pull_URL = URL + "/csapi/v1.1/images?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo) + "&filter=updated>" + str(updated) + "&sort=updated:asc")
         else:
             image_list_pull_URL = URL + "/csapi/v1.1/images?pageSize=" + str(pageSize) + "&sort=updated:asc&pageNo={}".format(str(pageNo))
-        image_list_pull_URL = report_config.URL + "/csapi/v1.1/images?pageSize=" + str(report_config.pageSize) + "&pageNo={}".format(str(pageNo))
         logger.debug("Image Pull URL {}".format(image_list_pull_URL))
         logger.debug('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), image_list_pull_URL))
         counter = 0
         while counter < 5:
 
-            image_list_data, image_list_status = Get_Call(report_config.username,report_config.password,image_list_pull_URL)
-            logger.debug("int(image_list_data[\'count\'] {0} // pageSize {1}) = {2}".format(str(image_list_data['count']), str(report_config.pageSize), str(int(image_list_data['count'] // report_config.pageSize))))
+            image_list_data, image_list_status = Get_Call(username,password,image_list_pull_URL)
+            logger.debug("int(image_list_data[\'count\'] {0} // pageSize {1}) = {2}".format(str(image_list_data['count']), str(pageSize), str(int(image_list_data['count'] // pageSize))))
             #logger.debug("Called {0} and got reponse code {1} with data: \n {2}".format(str(image_list_pull_URL),str(image_list_status),str(image_list_data)))
             logger.debug("image list \n {}".format(list(image_list_data)))
             logger.debug('{0} - API URL {1} response status: {2} \n'.format(datetime.datetime.utcnow(), image_list_pull_URL, image_list_status))
             if image_list_status != 200:
                 logger.debug('{0} - API URL {1} error details: {2} \n'.format(datetime.datetime.utcnow(),image_list_pull_URL, image_list_data))
             if image_list_status == 200:
-                logger.debug("pageNo {0} < int(image_list_data[\'count\'] {1} // pageSize {2}) = {3}".format(str(pageNo), str(image_list_data['count']), str(report_config.pageSize), str(int(image_list_data['count'] // report_config.pageSize))))
+                logger.debug("pageNo {0} < int(image_list_data[\'count\'] {1} // pageSize {2}) = {3}".format(str(pageNo), str(image_list_data['count']), str(pageSize), str(int(image_list_data['count'] // pageSize))))
                 pageNo +=1
                 full_image_list.extend(image_list_data['data'])
 
-                if pageNo > int(image_list_data['count'] // report_config.pageSize):
+                if pageNo > int(image_list_data['count'] // pageSize):
                     allResults = True
                 counter = 6
 
@@ -221,14 +214,10 @@ def image_vuln_csv():
 # Parse image list for Images with Vulns
 def imageDetails(full_image_list):
     reportData=[]
-
     lastUpdated = ''
     username, password, vuln_rating, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders = config()
-
-    report_config = Config()
-
     setup_http_session()
-    setup_credentials(report_config.username, report_config.password)
+    setup_credentials(username, password)
     imageWithVulns=[]
 
     for image in full_image_list:
@@ -241,21 +230,21 @@ def imageDetails(full_image_list):
         image_detail_list = ''
         image_details_url_status = ''
         image_details_url = ''
-        if report_config.vuln_severity == '54321':
+        if vuln_rating == '54321':
             if image['vulnerabilities']['severity1Count'] > 0 or image['vulnerabilities']['severity2Count'] > 0 or image['vulnerabilities']['severity3Count'] > 0 or image['vulnerabilities']['severity4Count'] > 0 or image['vulnerabilities']['severity5Count'] > 0:
-                image_details_url = report_config.URL + "/csapi/v1.1/images/" + str(image['imageId'])
-        elif report_config.vuln_severity == '5432':
+                image_details_url = URL + "/csapi/v1.1/images/" + str(image['imageId'])
+        elif vuln_rating == '5432':
             if image['vulnerabilities']['severity2Count'] > 0 or image['vulnerabilities']['severity3Count'] > 0 or image['vulnerabilities']['severity4Count'] > 0 or image['vulnerabilities']['severity5Count'] > 0:
-                image_details_url = report_config.URL + "/csapi/v1.1/images/" + str(image['imageId'])
-        elif report_config.vuln_severity == '543':
+                image_details_url = URL + "/csapi/v1.1/images/" + str(image['imageId'])
+        elif vuln_rating == '543':
             if image['vulnerabilities']['severity3Count'] > 0 or image['vulnerabilities']['severity4Count'] > 0 or image['vulnerabilities']['severity5Count'] > 0:
-                image_details_url = report_config.URL + "/csapi/v1.1/images/" + str(image['imageId'])
-        elif report_config.vuln_severity == '54':
+                image_details_url = URL + "/csapi/v1.1/images/" + str(image['imageId'])
+        elif vuln_rating == '54':
             if image['vulnerabilities']['severity4Count'] > 0 or image['vulnerabilities']['severity5Count'] > 0:
-                image_details_url = report_config.URL + "/csapi/v1.1/images/" + str(image['imageId'])
-        elif report_config.vuln_severity == '5':
+                image_details_url = URL + "/csapi/v1.1/images/" + str(image['imageId'])
+        elif vuln_rating == '5':
             if image['vulnerabilities']['severity5Count'] > 0:
-                image_details_url = report_config.URL + "/csapi/v1.1/images/" + str(image['imageId'])
+                image_details_url = URL + "/csapi/v1.1/images/" + str(image['imageId'])
         else:
             logger.warning('{0} - **** Exception - no vulnerbility inclusion limit set \n'.format(datetime.datetime.utcnow()))
             logger.debug('------------------------------End Image Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
@@ -271,7 +260,7 @@ def imageDetails(full_image_list):
         reportData = {"report": [], "imageDataShare": {}}
 
         if args.thread:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=int(report_config.threadCount)) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=int(threadCount)) as executor:
                 future_to_url = {executor.submit(imageVulns, url): url for url in imageWithVulns}
                 for future in concurrent.futures.as_completed(future_to_url):
                     url = future_to_url[future]
@@ -293,15 +282,9 @@ def imageDetails(full_image_list):
             ### Thread troubleshooting single thread linear iteration of containers
             for imageURL in imageWithVulns:
                 data = imageVulns(imageURL)
-
                 if len(data) > 0:
                     reportData['report'].extend(data['report'])
                     reportData['imageDataShare'].update(data['imageDataShare'])
-
-                reportData['report'].extend(data['report'])
-                reportData['imageDataShare'].update(data['imageDataShare'])
-
-
 
         logger.debug("reportData[report] is type {}".format(type(reportData['report'])))
         logger.debug("reportData[report] is length = {}".format(len(reportData['report'])))
@@ -313,7 +296,7 @@ def imageDetails(full_image_list):
         #input("Press Enter to continue...")
 
         #input("Press Enter to continue...")
-        writeCsv(reportData['report'], "Image", report_config.imageReportHeaders)
+        writeCsv(reportData['report'], "Image", imageReportHeaders)
 
     return reportData['imageDataShare'], maxUpdated
 
@@ -321,20 +304,16 @@ def imageDetails(full_image_list):
 def imageVulns(image_details_url):
     logger.debug("Starting Image ID {}".format(str(image_details_url)))
     imageReport = {"report": [], "imageDataShare": {}}
-    report_config = Config()
+    username, password, vuln_rating, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders = config()
     setup_http_session()
-    setup_credentials(report_config.username, report_config.password)
+    setup_credentials(username, password)
 
     if image_details_url:
         counter = 0
         while counter < 5:
 
-
             image_detail_list, image_details_url_status = Get_Call(username,password,image_details_url)
             #logger.debug("Image Details List Response {0} \n Body: \n {1} \n".format(str(image_details_url_status), str(image_detail_list)))
-
-            image_detail_list, image_details_url_status = Get_Call(report_config.username,report_config.password,image_details_url)
-
             logger.debug('{0} - API URL {1} response status: {2} \n'.format(datetime.datetime.utcnow(),image_details_url, image_details_url_status))
             if image_details_url_status != 200:
                 logger.debug('{0} - API URL {1} error details: {2} \n'.format(datetime.datetime.utcnow(),image_details_url, image_detail_list))
@@ -349,7 +328,7 @@ def imageVulns(image_details_url):
                 counter += 1
                 if counter == 5:
                     logger.debug('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),image_details_url))
-                    if report_config.exitOnError:
+                    if exitOnError:
                         logger.debug('{0} - Exiting\n'.format(datetime.datetime.utcnow()))
                         sys.exit(1)
                     else:
@@ -456,9 +435,9 @@ def imageVulns(image_details_url):
 
 # Get API call for /csapi/v1.1/containers/ to pull list of all containers
 def container_vuln_csv(imageShareData):
-    report_config = Config()
+    username, password, vuln_rating, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders = config()
     setup_http_session()
-    setup_credentials(report_config.username, report_config.password)
+    setup_credentials(username, password)
     pageNo=1
     containersWithVuln = []
     full_container_list = []
@@ -467,28 +446,24 @@ def container_vuln_csv(imageShareData):
     counter = 0
     allResults = False
     while allResults == False:
-
         if args.updated:
             container_list_pull_URL = URL + "/csapi/v1.1/containers?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo) + "&filter=updated>" + str(args.updated) + "&sort=updated:asc")
         else:
             container_list_pull_URL = URL + "/csapi/v1.1/containers?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo))
-
-        container_list_pull_URL = report_config.URL + "/csapi/v1.1/containers?pageSize=" + str(report_config.pageSize) + "&pageNo={}".format(str(pageNo))
-
         logger.debug("Container Pull URL {}".format(container_list_pull_URL))
         logger.debug('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), container_list_pull_URL))
         counter = 0
         while counter <= 5:
-            container_list_data, container_list_status = Get_Call(report_config.username,report_config.password,container_list_pull_URL)
+            container_list_data, container_list_status = Get_Call(username,password,container_list_pull_URL)
             logger.debug('{0} - API URL {1} response status: {2} \n'.format(datetime.datetime.utcnow(), container_list_pull_URL, container_list_status))
             if container_list_status != 200:
                 logger.debug('{0} - API URL {1} error details: {2} \n'.format(datetime.datetime.utcnow(),container_list_pull_URL, container_list_data))
             if container_list_status == 200:
                 full_container_list.extend(container_list_data['data'])
-                logger.debug("pageNo {0} <= int(image_list_data[\'count\'] {1} // pageSize {2}) = {3}".format(str(pageNo), str(container_list_data['count']), str(report_config.pageSize), str(int(container_list_data['count'] // report_config.pageSize))))
+                logger.debug("pageNo {0} <= int(image_list_data[\'count\'] {1} // pageSize {2}) = {3}".format(str(pageNo), str(container_list_data['count']), str(pageSize), str(int(container_list_data['count'] // pageSize))))
                 pageNo +=1
 
-                if pageNo >= (int(container_list_data['count'] // report_config.pageSize) + 1):
+                if pageNo >= (int(container_list_data['count'] // pageSize) + 1):
                     allResults = True
                 counter = 6
 
@@ -521,25 +496,25 @@ def container_vuln_csv(imageShareData):
             if str(container['containerId']) == 'None':
                 containerApiError.append(container)
             else:
-                if report_config.vuln_severity == '54321':
+                if vuln_rating == '54321':
                     if container['vulnerabilities']['severity1Count'] > 0 or container['vulnerabilities']['severity2Count'] > 0 or container['vulnerabilities']['severity3Count'] > 0 or container['vulnerabilities']['severity4Count'] > 0 or container['vulnerabilities']['severity5Count'] > 0:
-                        container_details_url = report_config.URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                        container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
                         testData.append(str(container['containerId']))
-                elif report_config.vuln_severity == '5432':
+                elif vuln_rating == '5432':
                     if container['vulnerabilities']['severity2Count'] > 0 or container['vulnerabilities']['severity3Count'] > 0 or container['vulnerabilities']['severity4Count'] > 0 or container['vulnerabilities']['severity5Count'] > 0:
-                        container_details_url = report_config.URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                        container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
                         testData.append(str(container['containerId']))
-                elif report_config.vuln_severity == '543':
+                elif vuln_rating == '543':
                     if container['vulnerabilities']['severity3Count'] > 0 or container['vulnerabilities']['severity4Count'] > 0 or container['vulnerabilities']['severity5Count'] > 0:
-                        container_details_url = report_config.URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                        container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
                         testData.append(str(container['containerId']))
-                elif report_config.vuln_severity == '54':
+                elif vuln_rating == '54':
                     if container['vulnerabilities']['severity4Count'] > 0 or container['vulnerabilities']['severity5Count'] > 0:
-                        container_details_url = report_config.URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                        container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
                         testData.append(str(container['containerId']))
-                elif report_config.vuln_severity == '5':
+                elif vuln_rating == '5':
                     if container['vulnerabilities']['severity5Count'] > 0:
-                        container_details_url = report_config.URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                        container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
                         testData.append(str(container['containerId']))
                 else:
                     logger.error('{0} - **** Exception - no vulnerbility inclusion limit set \n'.format(datetime.datetime.utcnow()))
@@ -564,7 +539,7 @@ def container_vuln_csv(imageShareData):
         logger.debug("Container URL List Length {}".format(len(containersWithVuln)))
 
         if args.thread:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=int(report_config.threadCount)) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=int(threadCount)) as executor:
                 future_to_url = {executor.submit(containerVulnDetails, url, imageShareData): url for url in containersWithVuln}
                 for future in concurrent.futures.as_completed(future_to_url):
                     url = future_to_url[future]
@@ -590,13 +565,13 @@ def container_vuln_csv(imageShareData):
         logger.debug("reportData is type {}".format(type(reportData)))
         logger.debug("reportData is length = {}".format(len(reportData)))
         logger.debug("*** Threading Report Data is complete *** \n\n\n\n {}".format(str(reportData)[:1000]))
-        writeCsv(reportData, "Container", report_config.containerReportHeaders)
+        writeCsv(reportData, "Container", containerReportHeaders)
 
 # Get API call for container details for vuln info parsing /csapi/v1.1/containers/containerId
 def containerVulnDetails(containerWithVuln, imageShareData):
-    report_config = Config()
+    username, password, vuln_rating, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders = config()
     setup_http_session()
-    setup_credentials(report_config.username, report_config.password)
+    setup_credentials(username, password)
     #image_details_url = ""
 
 
@@ -604,8 +579,8 @@ def containerVulnDetails(containerWithVuln, imageShareData):
     registry = ''
     counter = 0
     while counter <= 5:
-        #container_detail_list, container_details_url_status = Get_Call(report_config.username,report_config.password,container_details_url)
-        container_detail_list, container_details_url_status = Get_Call(report_config.username,report_config.password,containerWithVuln)
+        #container_detail_list, container_details_url_status = Get_Call(username,password,container_details_url)
+        container_detail_list, container_details_url_status = Get_Call(username,password,containerWithVuln)
         logger.debug('{0} - API URL {1} response status: {2} \n'.format(datetime.datetime.utcnow(),containerWithVuln,container_details_url_status))
         if container_details_url_status == 200:
             counter = 6
@@ -617,7 +592,7 @@ def containerVulnDetails(containerWithVuln, imageShareData):
             counter += 1
             if counter == 5:
                 logger.error('{0} - API URL {1} retry limit exceeded\n'.format(datetime.datetime.utcnow(),containerWithVuln))
-                if report_config.exitOnError:
+                if exitOnError:
                     logger.critical('{0} - Exiting\n'.format(datetime.datetime.utcnow()))
                     sys.exit(1)
                 else:
@@ -705,7 +680,6 @@ def containerVulnDetails(containerWithVuln, imageShareData):
     logger.debug('------------------------------Container End Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
     return containerVulnData
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--thread", "-t", help="Run report generation via Python ThreadPoolExecutor with number of threads defined in ./config.yml", action="store_true")
 parser.add_argument("--software", "-s", help="Create report with row per software package in the CSV report", action="store_true")
@@ -715,23 +689,11 @@ parser.add_argument("--imagesonly", "-i", help="Store last retrieved image updat
 
 args = parser.parse_args()
 
-
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--thread", "-t", help="Run report generation via Python ThreadPoolExecutor with number of threads defined in ./config.yml", action="store_true")
-    parser.add_argument("--software", "-s", help="Create report with row per software package in the CSV report", action="store_true")
-    args = parser.parse_args()
-
     setup_logging()
     logger = logging.getLogger(__name__)
-
     imageShareData, lastUpdated = image_vuln_csv()
     if args.recordprogress:
         setConfig(lastUpdated)
     if not args.imagesonly:
         container_vuln_csv(imageShareData)
-
-    imageShareData = image_vuln_csv()
-    container_vuln_csv(imageShareData)
-
-
