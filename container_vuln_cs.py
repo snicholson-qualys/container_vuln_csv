@@ -219,21 +219,6 @@ def imageDetails(full_image_list):
     setup_http_session()
     setup_credentials(username, password)
     imageWithVulns=[]
-    '''
-    if path.exists("./config/Last_Updated_Result") and args.recordprogress:
-        f=open("Last_Updated_Result", "r")
-        contents=f.read()
-        if contents:
-            maxUpdated = contents
-        elif args.updated:
-            maxUpdated = args.updated
-        else:
-            maxUpdated = 0
-    elif args.updated:
-        maxUpdated = args.updated
-    elif args.recordprogress:
-        maxUpdated = 0
-        '''
 
     for image in full_image_list:
         maxUpdated = ''
@@ -299,7 +284,7 @@ def imageDetails(full_image_list):
                 data = imageVulns(imageURL)
                 if len(data) > 0:
                     reportData['report'].extend(data['report'])
-
+                    reportData['imageDataShare'].update(data['imageDataShare'])
 
         logger.debug("reportData[report] is type {}".format(type(reportData['report'])))
         logger.debug("reportData[report] is length = {}".format(len(reportData['report'])))
@@ -369,29 +354,29 @@ def imageVulns(image_details_url):
                         tags += repo['tag'] + ";"
                 if repo['repository'] not in repository:
                     repository += repo['repository'] + ";"
-        #try:
-        if image_detail_list['host']:
-            logger.debug("Image ID {0} - Host {1}".format(str(image_detail_list['imageId']), str(image_detail_list['host'])))
-            hostname = ""
-            for host in image_detail_list['host']:
-                if "hostname" in host.keys():
-                    if host['hostname'] is None:
-                        continue
-                    else:
-                        logger.debug("image ID {0} - Hostname = {1}".format(str(image_detail_list['imageId']), str(host['hostname'])))
-                        if host['hostname'] not in hostname:
-                            logger.debug("Hostname not None")
-                            hostname += (host['hostname'] + ";")
-                            logger.debug("Hostname update: {}".format(str(hostname)))
+        try:
+            if image_detail_list['host']:
+                logger.debug("Image ID {0} - Host {1}".format(str(image_detail_list['imageId']), str(image_detail_list['host'])))
+                hostname = ""
+                for host in image_detail_list['host']:
+                    if "hostname" in host.keys():
+                        if host['hostname'] is None:
+                            continue
+                        else:
+                            logger.debug("image ID {0} - Hostname = {1}".format(str(image_detail_list['imageId']), str(host['hostname'])))
+                            if host['hostname'] not in hostname:
+                                logger.debug("Hostname not None")
+                                hostname += (host['hostname'] + ";")
+                                logger.debug("Hostname update: {}".format(str(hostname)))
 
-        else:
-            hostname = ""
-            '''
+            else:
+                hostname = ""
+
         except KeyError:
             logger.debug("Key Error: {}".format(str(KeyError)))
             hostname = ""
             pass
-            '''
+
         logger.debug("Processing image vuln")
         logger.debug("Length of Vuln List: {}".format(len(image_detail_list['vulnerabilities'])))
         logger.debug("Image ID {}".format(str(image_detail_list['imageId'])))
@@ -667,9 +652,14 @@ def containerVulnDetails(containerWithVuln, imageShareData):
             else:
                 if vulns['software']:
                     for software in vulns['software']:
-                        softwarePackage.append(str(software['name']))
-                        currentVersion.append(str(software['version']))
-                        fixVersion.append(str(software['fixVersion']))
+                        if software['name'] is not None:
+                            softwarePackage.append(str(software['name']))
+                        if software['version'] is not None:
+                            currentVersion.append(str(software['version']))
+                        if software['fixVersion'] is not None:
+                            fixVersion.append(str(software['fixVersion']))
+                        else:
+                            fixVersion = []
                 if vulns['cveids']:
                     for cve in vulns['cveids']:
                         # old code for previous version writing out to CSV directly
