@@ -141,13 +141,13 @@ def setConfig(updated):
     f.write(str(updated))
     f.close()
 
-# API Call to /csapi/v1.1/images to get list of all images
+# API Call to /csapi/v1.2/images to get list of all images
 def image_vuln_csv():
 
     username, password, vuln_rating, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders = config()
     setup_http_session()
     setup_credentials(username, password)
-    pageNo = 0
+    pageNo = 1
     logger.debug("Starting image_vuln_csv")
     logger.debug('------------------------------Begin Image Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
     updated = 0
@@ -171,9 +171,9 @@ def image_vuln_csv():
                 updated = args.updated
             elif args.recordprogress:
                 updated = 0
-            image_list_pull_URL = URL + "/csapi/v1.1/images?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo) + "&filter=updated>" + str(updated) + "&sort=updated:asc")
+            image_list_pull_URL = URL + "/csapi/v1.2/images?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo) + "&filter=updated>" + str(updated) + "&sort=updated:asc")
         else:
-            image_list_pull_URL = URL + "/csapi/v1.1/images?pageSize=" + str(pageSize) + "&sort=updated:asc&pageNo={}".format(str(pageNo))
+            image_list_pull_URL = URL + "/csapi/v1.2/images?pageSize=" + str(pageSize) + "&sort=updated:asc&pageNo={}".format(str(pageNo))
         logger.debug("Image Pull URL {}".format(image_list_pull_URL))
         logger.debug('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), image_list_pull_URL))
         counter = 0
@@ -232,19 +232,19 @@ def imageDetails(full_image_list):
         image_details_url = ''
         if vuln_rating == '54321':
             if image['vulnerabilities']['severity1Count'] > 0 or image['vulnerabilities']['severity2Count'] > 0 or image['vulnerabilities']['severity3Count'] > 0 or image['vulnerabilities']['severity4Count'] > 0 or image['vulnerabilities']['severity5Count'] > 0:
-                image_details_url = URL + "/csapi/v1.1/images/" + str(image['imageId'])
+                image_details_url = URL + "/csapi/v1.2/images/" + str(image['imageId'])
         elif vuln_rating == '5432':
             if image['vulnerabilities']['severity2Count'] > 0 or image['vulnerabilities']['severity3Count'] > 0 or image['vulnerabilities']['severity4Count'] > 0 or image['vulnerabilities']['severity5Count'] > 0:
-                image_details_url = URL + "/csapi/v1.1/images/" + str(image['imageId'])
+                image_details_url = URL + "/csapi/v1.2/images/" + str(image['imageId'])
         elif vuln_rating == '543':
             if image['vulnerabilities']['severity3Count'] > 0 or image['vulnerabilities']['severity4Count'] > 0 or image['vulnerabilities']['severity5Count'] > 0:
-                image_details_url = URL + "/csapi/v1.1/images/" + str(image['imageId'])
+                image_details_url = URL + "/csapi/v1.2/images/" + str(image['imageId'])
         elif vuln_rating == '54':
             if image['vulnerabilities']['severity4Count'] > 0 or image['vulnerabilities']['severity5Count'] > 0:
-                image_details_url = URL + "/csapi/v1.1/images/" + str(image['imageId'])
+                image_details_url = URL + "/csapi/v1.2/images/" + str(image['imageId'])
         elif vuln_rating == '5':
             if image['vulnerabilities']['severity5Count'] > 0:
-                image_details_url = URL + "/csapi/v1.1/images/" + str(image['imageId'])
+                image_details_url = URL + "/csapi/v1.2/images/" + str(image['imageId'])
         else:
             logger.warning('{0} - **** Exception - no vulnerbility inclusion limit set \n'.format(datetime.datetime.utcnow()))
             logger.debug('------------------------------End Image Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
@@ -300,7 +300,7 @@ def imageDetails(full_image_list):
 
     return reportData['imageDataShare'], maxUpdated
 
-# API Call to /csapi/v1.1/images/imageId to get Image and Vuln details
+# API Call to /csapi/v1.2/images/imageId to get Image and Vuln details
 def imageVulns(image_details_url):
     logger.debug("Starting Image ID {}".format(str(image_details_url)))
     imageReport = {"report": [], "imageDataShare": {}}
@@ -433,7 +433,7 @@ def imageVulns(image_details_url):
     logger.debug('------------------------------End Image Debug Log {0} --------------------------------\n'.format(datetime.datetime.utcnow()))
 
 
-# Get API call for /csapi/v1.1/containers/ to pull list of all containers
+# Get API call for /csapi/v1.2/containers/ to pull list of all containers
 def container_vuln_csv(imageShareData):
     username, password, vuln_rating, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders = config()
     setup_http_session()
@@ -447,9 +447,9 @@ def container_vuln_csv(imageShareData):
     allResults = False
     while allResults == False:
         if args.updated:
-            container_list_pull_URL = URL + "/csapi/v1.1/containers?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo) + "&filter=updated>" + str(args.updated) + "&sort=updated:asc")
+            container_list_pull_URL = URL + "/csapi/v1.2/containers?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo) + "&filter=updated>" + str(args.updated) + "&sort=updated:asc")
         else:
-            container_list_pull_URL = URL + "/csapi/v1.1/containers?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo))
+            container_list_pull_URL = URL + "/csapi/v1.2/containers?pageSize=" + str(pageSize) + "&pageNo={}".format(str(pageNo))
         logger.debug("Container Pull URL {}".format(container_list_pull_URL))
         logger.debug('{0} - Calling {1} \n'.format(datetime.datetime.utcnow(), container_list_pull_URL))
         counter = 0
@@ -498,23 +498,23 @@ def container_vuln_csv(imageShareData):
             else:
                 if vuln_rating == '54321':
                     if container['vulnerabilities']['severity1Count'] > 0 or container['vulnerabilities']['severity2Count'] > 0 or container['vulnerabilities']['severity3Count'] > 0 or container['vulnerabilities']['severity4Count'] > 0 or container['vulnerabilities']['severity5Count'] > 0:
-                        container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                        container_details_url = URL + "/csapi/v1.2/containers/" + str(container['containerId'])
                         testData.append(str(container['containerId']))
                 elif vuln_rating == '5432':
                     if container['vulnerabilities']['severity2Count'] > 0 or container['vulnerabilities']['severity3Count'] > 0 or container['vulnerabilities']['severity4Count'] > 0 or container['vulnerabilities']['severity5Count'] > 0:
-                        container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                        container_details_url = URL + "/csapi/v1.2/containers/" + str(container['containerId'])
                         testData.append(str(container['containerId']))
                 elif vuln_rating == '543':
                     if container['vulnerabilities']['severity3Count'] > 0 or container['vulnerabilities']['severity4Count'] > 0 or container['vulnerabilities']['severity5Count'] > 0:
-                        container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                        container_details_url = URL + "/csapi/v1.2/containers/" + str(container['containerId'])
                         testData.append(str(container['containerId']))
                 elif vuln_rating == '54':
                     if container['vulnerabilities']['severity4Count'] > 0 or container['vulnerabilities']['severity5Count'] > 0:
-                        container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                        container_details_url = URL + "/csapi/v1.2/containers/" + str(container['containerId'])
                         testData.append(str(container['containerId']))
                 elif vuln_rating == '5':
                     if container['vulnerabilities']['severity5Count'] > 0:
-                        container_details_url = URL + "/csapi/v1.1/containers/" + str(container['containerId'])
+                        container_details_url = URL + "/csapi/v1.2/containers/" + str(container['containerId'])
                         testData.append(str(container['containerId']))
                 else:
                     logger.error('{0} - **** Exception - no vulnerbility inclusion limit set \n'.format(datetime.datetime.utcnow()))
@@ -567,7 +567,7 @@ def container_vuln_csv(imageShareData):
         logger.debug("*** Threading Report Data is complete *** \n\n\n\n {}".format(str(reportData)[:1000]))
         writeCsv(reportData, "Container", containerReportHeaders)
 
-# Get API call for container details for vuln info parsing /csapi/v1.1/containers/containerId
+# Get API call for container details for vuln info parsing /csapi/v1.2/containers/containerId
 def containerVulnDetails(containerWithVuln, imageShareData):
     username, password, vuln_rating, URL, pageSize, exitOnError, threadCount, imageReportHeaders, containerReportHeaders = config()
     setup_http_session()
