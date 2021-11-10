@@ -19,7 +19,7 @@ Two configuration settings will need to be made by the user before using this sc
 
   `vulnerabilities_to_report`: string value of severity ratings to include (**acceptable entries 54321, 5432, 543, 54, or 5**)
 
-  `apiURL`: Qualys API URL base (https:// - > .com, without a trailing '/'. e.g. `https://qualysapi.qg2.apps.qualys.com` )
+  `apiURL`: Qualys API Gateway URL base (https:// - > .com, without a trailing '/'. e.g. `https://gateway.qg2.apps.qualys.com` )
 
   `pageSize`: Maximum number of records to return for container and image lists. Default value is 1000, maximum is 10000.
 
@@ -51,7 +51,7 @@ The Script is configured to read in a base64 encoded password via a base64.decod
 This script is tested on Python 3.
 
 This script requires the following PIP modules to run:
-  requests, datetime, pyyaml
+  requests, PyYAML
 
 These modules can be installed with:
 ```
